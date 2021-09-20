@@ -23,12 +23,12 @@ public:
 	vector<double> grad_;
 
 	//Function
-	void make() ///< Build a layer
+	void make(); ///< Build a layer
 };
 
 class FLNN {
 private:
-	int step;
+	int step; ///< forward step
 public:
 	/*HyperParametor*/
 	//essential
@@ -78,9 +78,9 @@ inline void FLNN::forward_step()
 {
 	vector<double> empty_input;
 	empty_input.resize(input_node_num_);
-	memset(empty_input, 0, sizeof(empty_input));
+	memset(&empty_input, 0, sizeof(empty_input));
 
-	forward_step(empty_input)
+	forward_step(empty_input);
 
 	return;
 }
