@@ -16,7 +16,8 @@ public:
 	vector<vector<double>> weight_;
 	vector<vector<double>> stochastic_gate_rate_;
 	vector<double> bias_;
-	
+	vector<double> result_;
+
 	//Backprop
 	vector<vector<double>> weight_grad_;
 	vector<vector<int>> stochastic_gate_grad_;
@@ -42,13 +43,15 @@ public:
 	double backprop_truncate_step_; ///< Backprop 반복 최대 횟수 설정
 	string activation_;
 	string loss_;
-	double stochastic_rate_; ///< 신경 전달 확률
+	double stochastic_rate_init_; ///< stochastic_gate init value
+	double bias_init_; ///< bias init value
 
 	//Function
 	void make(); ///< Build & make the model
 	void forward_step(vector<double> input); ///< 한 전체 루프를 진행
 	void forward_step(); ///< 없는 input으로 loop된 데이터만 공회전
 	void optimize(vector<double> target);
+	void reset_grad();
 	void reset();
 
 	FLNN() {
@@ -58,7 +61,8 @@ public:
 		backprop_truncate_step_ = 2;
 		activation_ = "ReLU";
 		loss_ = "MSE";
-		stochastic_rate_ = 0.3f;
+		stochastic_rate_init_ = 0.3f;
+		bias_init_ = 0.01f;
 
 		//Reset variable
 		step = 0;
@@ -86,6 +90,10 @@ inline void FLNN::forward_step()
 }
 
 inline void FLNN::optimize(vector<double> target)
+{
+}
+
+inline void FLNN::reset_grad()
 {
 }
 

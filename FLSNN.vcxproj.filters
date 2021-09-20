@@ -20,7 +20,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="flnn\FLNN.h">
+    <ClInclude Include="FLSNN\FLSNN.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
