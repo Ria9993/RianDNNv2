@@ -1,2 +1,2 @@
-# Forward Looped Neural Network
+# Forward Looped Stochastic Neural Network
 ## Structure
