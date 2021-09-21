@@ -24,7 +24,7 @@ public:
 	vector<double> grad_;
 
 	//Function
-	void make(); ///< Build a layer
+	void build(); ///< Build a layer
 };
 
 class FLNN {
@@ -39,7 +39,7 @@ public:
 	int output_node_num_;
 	//optional
 	double learning_rate_;
-	double clipping_threshold_;
+	double grad_clipping_;
 	double backprop_truncate_step_; ///< Backprop 반복 최대 횟수 설정
 	string activation_;
 	string loss_;
@@ -47,7 +47,7 @@ public:
 	double bias_init_; ///< bias init value
 
 	//Function
-	void make(); ///< Build & make the model
+	void build(); ///< Build the model
 	void forward_step(vector<double> input); ///< 한 전체 루프를 진행
 	void forward_step(); ///< 없는 input으로 loop된 데이터만 공회전
 	void optimize(vector<double> target);
@@ -57,7 +57,7 @@ public:
 	FLNN() {
 		//Default optional parametor set
 		learning_rate_ = 0.001f;
-		clipping_threshold_ = 100.0f;
+		grad_clipping_ = 100.0f;
 		backprop_truncate_step_ = 2;
 		activation_ = "ReLU";
 		loss_ = "MSE";
@@ -69,7 +69,7 @@ public:
 	}
 };
 
-inline void FLNN::make()
+inline void FLNN::build()
 {
 
 }
