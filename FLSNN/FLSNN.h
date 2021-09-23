@@ -6,21 +6,38 @@
 #include <string>
 using namespace std;
 
+class Connection {
+private:
+public:
+	////Pointer
+	//Layer* dest_;
+	//Layer* source_;
+
+	//Element
+	vector<vector<double>> weight_;
+	vector<vector<double>> stochastic_gate_rate_;
+
+	//Backprop Gradient
+	vector<vector<double>> weight_grad_;
+	vector<vector<int>> stochastic_gate_grad_;
+};
+
 class Layer {
 private:
 public:
 	//Parametor
 	int node_num_;
 	string activation_;
-	vector<Layer*> next_; ///< Pointer next layer (can multiple)
-	vector<vector<double>> weight_;
-	vector<vector<double>> stochastic_gate_rate_;
+
+	//Connection
+	vector<Connection> next_;
+	vector<Layer*> last_;
+
+	//Element
 	vector<double> bias_;
 	vector<double> result_;
 
-	//Backprop
-	vector<vector<double>> weight_grad_;
-	vector<vector<int>> stochastic_gate_grad_;
+	//Backprop Gradient
 	vector<double> grad_;
 
 	//Function
@@ -31,13 +48,13 @@ class FLNN {
 private:
 	int step; ///< forward step
 public:
-	/*HyperParametor*/
-	//essential
+	//HyperParam
+	///essential
 	int input_node_num_;
 	int hidden_num_;
 	int hidden_node_num_;
 	int output_node_num_;
-	//optional
+	///optional
 	double learning_rate_;
 	double grad_clipping_;
 	double backprop_truncate_step_; ///< Backprop 반복 최대 횟수 설정
