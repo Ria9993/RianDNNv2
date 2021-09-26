@@ -2,12 +2,21 @@
 
 #include <stdio.h>
 #include <vector>
-#include <thread>
 #include <string>
 #include <random>
+#include <algorithm>
 using namespace std;
 
+#include <thread>
+#include <ppl.h>
+using namespace concurrency;
+
 namespace FLSNN {
+	inline void ReLU(double *x) {
+		*x = max((double)0, *x);
+		return;
+	}
+
 	class HyperParm {
 	private:
 	public:
@@ -63,12 +72,11 @@ namespace FLSNN {
 		vector<double> bias_;
 		vector<double> result_;
 		bool build_flag_;
+		bool calc_flag_;
 
 		//Backprop Gradient
 		vector<double> grad_;
 
-		//Function
-		void build(HyperParm* parm); ///< Build layer_chain & Auto set Hyperparm
 
 		//Layer init
 		Layer(int node_num, string activation) {
@@ -77,22 +85,44 @@ namespace FLSNN {
 		}
 
 		//Layer Connect
-		Layer operator += (Layer& x) {
+		Layer operator >> (Layer& x) {
 			next_.push_back(&x);
 			x.last_.push_back(this);
 			return *this;
 		}
+
+		//Function
+		void build(HyperParm* hyper_parm); ///< Build layer_chain & Auto set Hyperparm
+		void run(HyperParm* hyper_parm);
+		///todo prediect
 	};
 
-	void Layer::build(HyperParm* parm)
-	{
+	class Iterator {
+	private:
+	public:
+		vector<pair<Layer*, Layer*>> route_;
+		Iterator() {
+		}
+
+		void add(Layer* x, Layer* y) {
+			*x >> *y;
+			route_.push_back({ x,y });
+			return;
+		}
+	};
+
+	void Layer::build(HyperParm* hyper_parm) {
+		//Check flag
 		if (build_flag_ == true)
 			return;
-		else
+		else {
 			build_flag_ = true;
+			calc_flag_ = false;
+			execute_num_ = 0;
+		}
 
 		//element init
-		bias_.resize(node_num_, parm->bias_init_);
+		bias_.resize(node_num_, hyper_parm->bias_init_);
 		result_.resize(node_num_, 0);
 		grad_.resize(node_num_, 0);
 
@@ -106,18 +136,65 @@ namespace FLSNN {
 			connection_[i].weight_grad_.resize(this->node_num_, vector<double>(next_[i]->node_num_, 0));
 			connection_[i].stochastic_gate_.resize(this->node_num_, vector<double>(next_[i]->node_num_));
 			connection_[i].stochastic_gate_grad_.resize(this->node_num_, vector<double>(next_[i]->node_num_, 0));
-			//Weight HE init
+			//Weight, stochastic_gate init
 			for (int j = 0; j < this->node_num_; j++) {
 				for (int k = 0; k < next_[i]->node_num_; k++) {
 					connection_[i].weight_[j][k] = HE(gen);
+					connection_[i].stochastic_gate_[j][k] = hyper_parm->stochastic_rate_init_;
 				}
 			}
 		}
 
 		//Build chain
 		for (int i = 0; i < next_.size(); i++) {
-			next_[i]->build(parm);
+			next_[i]->build(hyper_parm);
 		}
+
+		return;
+	}
+
+	void Layer::run(HyperParm* hyper_parm) {
+		//Check flag
+		if (calc_flag_ == true)
+			return;
+		else {
+			//wait for last layers
+			for (int i = 0; i < last_.size(); i++) {
+				if (last_[i]->calc_flag_ == false) {
+					return;
+				}
+			}
+			calc_flag_ = true;
+		}
+
+		//Calculate
+		random_device rd;
+		mt19937 gen(rd());
+		for (int i = 0; i < next_.size(); i++) {
+			Layer* dest = next_[i];
+
+			//Parallel
+			parallel_for(0, next_[i]->node_num_, [&](int n) {
+				//Bias & reset
+				dest->result_[n] = dest->bias_[n];
+				for (int j = 0; j < this->node_num_; j++) {
+					//Stochastic gate
+					uniform_real_distribution<double> rnd(0, 1);
+					if (rnd(gen) > this->connection_[i].stochastic_gate_[j][n]) {
+						//Weight
+						dest->result_[n] += this->result_[j] * this->connection_[i].weight_[j][n];
+					}
+				}
+				//Activation
+				if (dest->activation_ == "ReLU")
+					ReLU(&dest->result_[n]);
+				else; ///< activation::None
+				});
+
+			//Run next layer
+			next_[i]->run(hyper_parm);
+		}
+
 		return;
 	}
 
