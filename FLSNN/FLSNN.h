@@ -4,24 +4,26 @@
 #include <vector>
 #include <thread>
 #include <string>
+#include <random>
 using namespace std;
 
 namespace FLSNN {
 	class HyperParm {
 	private:
 	public:
+		int execute_num_;
 		double learning_rate_;
 		double grad_clipping_;
-		double backprop_depth_limit_; ///< Backprop depth 제한
+		double backprop_depth_limit_; ///< Backprop depth 제한 (Default : model_depth)
 		string loss_;
 		double stochastic_rate_init_; ///< stochastic_gate init value
 		double bias_init_; ///< bias init value
 
 		HyperParm() {
 			//Default optional parametor set
-			//learning_rate_ = 0.001f;
-			//grad_clipping_ = 100.0f;
-			//backprop_depth_limit_ = 2;
+			learning_rate_ = 0.001f;
+			grad_clipping_ = 100.0f;
+			execute_num_ = 0;
 			loss_ = "MSE";
 			stochastic_rate_init_ = 0.3f;
 			bias_init_ = 0.01f;
@@ -37,11 +39,11 @@ namespace FLSNN {
 
 		//Element
 		vector<vector<double>> weight_;
-		vector<vector<double>> stochastic_gate_rate_;
+		vector<vector<double>> stochastic_gate_;
 
 		//Backprop Gradient
 		vector<vector<double>> weight_grad_;
-		vector<vector<int>> stochastic_gate_grad_;
+		vector<vector<double>> stochastic_gate_grad_;
 	};
 
 	class Layer {
@@ -60,6 +62,7 @@ namespace FLSNN {
 		int execute_num_;
 		vector<double> bias_;
 		vector<double> result_;
+		bool build_flag_;
 
 		//Backprop Gradient
 		vector<double> grad_;
@@ -74,15 +77,47 @@ namespace FLSNN {
 		}
 
 		//Layer Connect
-		Layer operator >> (Layer& x) {
-			//Pointer set
+		Layer operator += (Layer& x) {
 			next_.push_back(&x);
 			x.last_.push_back(this);
+			return *this;
 		}
 	};
 
-	void FLSNN::Layer::build(HyperParm* parm)
+	void Layer::build(HyperParm* parm)
 	{
+		if (build_flag_ == true)
+			return;
+		else
+			build_flag_ = true;
+
+		//element init
+		bias_.resize(node_num_, parm->bias_init_);
+		result_.resize(node_num_, 0);
+		grad_.resize(node_num_, 0);
+
+		//connection init
+		random_device rd;
+		mt19937 gen(rd());
+		normal_distribution<double> HE(0, (double)2 / this->node_num_); ///< HE initialization
+		connection_.resize(next_.size());
+		for (int i = 0; i < next_.size(); i++) {
+			connection_[i].weight_.resize(this->node_num_, vector<double>(next_[i]->node_num_));
+			connection_[i].weight_grad_.resize(this->node_num_, vector<double>(next_[i]->node_num_, 0));
+			connection_[i].stochastic_gate_.resize(this->node_num_, vector<double>(next_[i]->node_num_));
+			connection_[i].stochastic_gate_grad_.resize(this->node_num_, vector<double>(next_[i]->node_num_, 0));
+			//Weight HE init
+			for (int j = 0; j < this->node_num_; j++) {
+				for (int k = 0; k < next_[i]->node_num_; k++) {
+					connection_[i].weight_[j][k] = HE(gen);
+				}
+			}
+		}
+
+		//Build chain
+		for (int i = 0; i < next_.size(); i++) {
+			next_[i]->build(parm);
+		}
 		return;
 	}
 
