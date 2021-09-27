@@ -18,20 +18,22 @@ int main() {
 	/*
 	{input, transition} += h1 += h2 += h3 += {output, transition}
 	*/
-	input >> h1;
-	transition >> h1;
-	h1 >> h2;
-	h2 >> h3;
-	h3 >> output;
-	h3 >> transition;
+	FLSNN::Iterator iterator;
+	iterator.add(&input, &h1);
+	iterator.add(&transition, &h1);
+	iterator.add(&h1, &h2);
+	iterator.add(&h2, &h3);
+	iterator.add(&h3, &output);
+	iterator.add(&h3, &transition);
 
 	hyper_parm.backprop_depth_limit_ = 5;
 
-	input.build(&hyper_parm);
+	iterator.build(&hyper_parm);
 
 	vector<double> sample(128, 0.5);
 	input.result_ = sample;
-	input.run(&hyper_parm);
+	
+	iterator.run();
 
 	return 0;
 }
