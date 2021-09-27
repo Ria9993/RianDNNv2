@@ -109,6 +109,10 @@ namespace FLSNN {
 			route_.push_back({ x,y });
 			return;
 		}
+		void run() {
+			
+			return;
+		}
 	};
 
 	void Layer::build(HyperParm* hyper_parm) {
@@ -175,8 +179,8 @@ namespace FLSNN {
 
 			//Parallel
 			parallel_for(0, next_[i]->node_num_, [&](int n) {
-				//Bias & reset
-				dest->result_[n] = dest->bias_[n];
+				////Bias & reset
+				//dest->result_[n] = dest->bias_[n];
 				for (int j = 0; j < this->node_num_; j++) {
 					//Stochastic gate
 					uniform_real_distribution<double> rnd(0, 1);
@@ -191,8 +195,8 @@ namespace FLSNN {
 				else; ///< activation::None
 				});
 
-			//Run next layer
-			next_[i]->run(hyper_parm);
+			////Run next layer
+			//next_[i]->run(hyper_parm);
 		}
 
 		return;
