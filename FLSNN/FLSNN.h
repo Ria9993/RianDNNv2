@@ -179,7 +179,7 @@ namespace FLSNN {
 		//reset calc_result
 		for (int i = 0; i < list_.size(); i++) {
 			Layer* layer = list_[i];
-			layer->calc_result_.assign(layer->calc_result_.size(), 0);
+			layer->calc_result_ = layer->bias_;
 		}
 
 		//calc by route
@@ -202,18 +202,16 @@ namespace FLSNN {
 			}
 		}
 
-		//copy calc_result to result
-		source->result_ = source->calc_result_;
-
 		//Parallel calc
 		parallel_for(0, dest->node_num_, [&](int n) {
-			//Activation
-			if (source->activation_ == "ReLU")
-				ReLU(&source->calc_result_[n]);
-			if (source->activation_ == "Sigmoid");
-			else;
 
 			for (int j = 0; j < source->node_num_; j++) {
+				//Activation
+				if (source->activation_ == "ReLU")
+					ReLU(&source->calc_result_[j]);
+				if (source->activation_ == "Sigmoid");
+				else;
+
 				//Stochastic gate
 				uniform_real_distribution<double> rnd(0, 1);
 				if (rnd(gen) > source->connection_[dest_idx].stochastic_gate_[j][n]) {
@@ -222,6 +220,9 @@ namespace FLSNN {
 				}
 			}
 			});
+
+		//copy calc_result to result
+		dest->result_ = dest->calc_result_;
 
 		return;
 	}
