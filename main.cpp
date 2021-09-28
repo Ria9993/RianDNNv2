@@ -22,6 +22,7 @@ int main() {
 	iterator.add(&h2, &h3);
 	iterator.add(&h3, &output);
 	iterator.add(&h3, &transition);
+	iterator.output_ = &output;
 
 	FLSNN::HyperParm hyper_parm;
 	hyper_parm.learning_rate_ = 0.001f;

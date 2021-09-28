@@ -102,11 +102,13 @@ namespace FLSNN {
 		//element
 		vector<pair<Layer*, Layer*>> route_;
 		vector<Layer*> list_; ///< Áßº¹ ¾ø´Â layer_list
-		int execute_num_; //run È½¼ö
+		Layer* output_; ///< pointer of output layer
+		int execute_num_; ///< run È½¼ö
 		double loss_;
 
 		Iterator() {
 			execute_num_ = 0;
+			loss_ = 0;
 		}
 
 		//Function
@@ -218,9 +220,12 @@ namespace FLSNN {
 
 			for (int j = 0; j < source->node_num_; j++) {
 				//Activation
-				if (source->activation_ == "ReLU")
-					ReLU(&source->calc_result_[j]);
-				if (source->activation_ == "Sigmoid");
+				if (source->activation_ == "ReLU") {
+					if (source->calc_result_[j] <= 0)
+						continue;
+					//ReLU(&source->calc_result_[j]);
+				}
+				if (source->activation_ == "Sigmoid");z
 				else;
 
 				//Stochastic gate
@@ -257,7 +262,7 @@ namespace FLSNN {
 		
 		//backprop
 		for (int i = 0; i < output->last_.size(); i++) {
-			backprop(output->last_[i], &output->result_, 1, hyper_parm);
+			backprop(output->last_[i], &output->grad_, 1, hyper_parm);
 		}
 
 		//update elements of layer & connection
@@ -271,6 +276,22 @@ namespace FLSNN {
 
 	void Iterator::backprop(Layer* layer, vector<double>* grad, int depth, HyperParm* hyper_parm)
 	{
+		//check for backprop_depth_limit
+		if (depth >= hyper_parm->backprop_depth_limit_)
+			return;
+
+		//calc grad
+		int next_size = grad->size();
+		for (int i = 0; i < layer->node_num_; i++) {
+			for (int j = 0; j < next_size; j++) {
+
+			}
+		}
+
+		//backprop chain
+		for (int i = 0; i < layer->last_.size(); i++) {
+			backprop(layer->last_[i], &layer->grad_, depth + 1 , hyper_parm);
+		}
 
 		return;
 	}
