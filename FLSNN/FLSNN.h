@@ -119,7 +119,7 @@ namespace FLSNN {
 		void build(Layer* layer, HyperParm* hyper_parm);
 		void run(vector<double>& target, HyperParm* hyper_parm);
 		void calc(Layer* source, Layer* dest);
-		void optimize(Layer* output, HyperParm* hyper_parm);
+		void optimize(HyperParm* hyper_parm);
 		void backprop(Layer* layer, Layer* source, int depth, HyperParm* hyper_parm);
 		void grad_clear();
 		///todo prediect
@@ -204,6 +204,7 @@ namespace FLSNN {
 		}
 
 		//calc derivative of loss
+		loss_ = 0;
 		for (int i = 0; i < output_->node_num_; i++) {
 			double tmp = 0;
 			if (hyper_parm->loss_ == "MSE") {
@@ -261,11 +262,11 @@ namespace FLSNN {
 		return;
 	}
 
-	void Iterator::optimize(Layer* output, HyperParm* hyper_parm)
+	void Iterator::optimize(HyperParm* hyper_parm)
 	{		
 		//backprop
-		for (int i = 0; i < output->last_.size(); i++) {
-			backprop(output->last_[i], output, 1, hyper_parm);
+		for (int i = 0; i < output_->last_.size(); i++) {
+			backprop(output_->last_[i], output_, 1, hyper_parm);
 		}
 
 		grad_clear();
@@ -291,13 +292,12 @@ namespace FLSNN {
 			for (int j = 0; j < source->node_num_; j++) {
 				double grad_tmp, tmp;
 				//weight
-				grad_tmp = source->grad_[j] * layer->connection_[source_idx].weight_grad_[i][j] / execute_num_;
-				layer->connection_[source_idx].weight_[i][j] -= tmp = hyper_parm->learning_rate_ * grad_tmp
-					+ (layer->connection_[source_idx].weight_grad_last_[i][j] * hyper_parm->backprop_rate_);
-				layer->connection_[source_idx].weight_grad_last_[i][j] = tmp;
+				grad_tmp = source->grad_[j] * layer->connection_[source_idx].weight_grad_[i][j];
+				layer->connection_[source_idx].weight_[i][j] -= hyper_parm->learning_rate_ * grad_tmp;
+				//layer->connection_[source_idx].weight_grad_last_[i][j] = tmp;
 				//stochastic_gate
-				grad_tmp *= layer->connection_[source_idx].stochastic_gate_grad_[i][j] / execute_num_;
-				layer->connection_[source_idx].stochastic_gate_[i][j] -= hyper_parm->learning_rate_ * grad_tmp;
+				//grad_tmp *= layer->connection_[source_idx].stochastic_gate_grad_[i][j] / execute_num_;
+				//layer->connection_[source_idx].stochastic_gate_[i][j] += hyper_parm->learning_rate_ * grad_tmp;
 				//backprop
 				layer->grad_[i] += grad_tmp;
 			}
@@ -309,7 +309,7 @@ namespace FLSNN {
 		if (layer->backprop_done_ == layer->next_.size()) {
 			//bios update
 			for (int i = 0; i < layer->node_num_; i++) {
-				layer->bias_[i] -= hyper_parm->learning_rate_ * layer->grad_[i];
+				//layer->bias_[i] += hyper_parm->learning_rate_ * layer->grad_[i];
 			}
 			//backprop recursive
 			for (int i = 0; i < layer->last_.size(); i++) {
