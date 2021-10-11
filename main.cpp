@@ -17,15 +17,15 @@ int main() {
 	FLSNN::Layer output(1, "None");
 	FLSNN::Iterator iterator;
 	iterator.add(&input, &h1);
-	//iterator.add(&transition, &h1);
-	iterator.add(&h1, &output);
-	//iterator.add(&h2, &h3);
-	//iterator.add(&h3, &output);
-	//iterator.add(&h3, &transition);
+	iterator.add(&transition, &h1);
+	iterator.add(&h1, &h2);
+	iterator.add(&h2, &h3);
+	iterator.add(&h3, &output);
+	iterator.add(&h3, &transition);
 	iterator.output_ = &output;
 
 	FLSNN::HyperParm hyper_parm;
-	hyper_parm.learning_rate_ = 0.01f;
+	hyper_parm.learning_rate_ = 0.001f;
 	hyper_parm.stochastic_rate_init_ = 0.00f;
 	hyper_parm.backprop_depth_limit_ = 10;
 	hyper_parm.grad_clipping_ = 100.0f;
@@ -36,32 +36,23 @@ int main() {
 
 	iterator.build(&hyper_parm);
 
-	//vector<double> sample(128, 0.5);
-	//input.result_ = sample;
-	//vector<double> target(1, 0.3141592f);
-
-	//random_device rd;
-	//mt19937 gen(rd());
-	//uniform_real_distribution<double> rand(-1, 1);
-	//for (int i = 0; i < 1000; i++) {
-	//	//for (int j = 0; j < 10; j++) {
-	//		vector<double>sample(1, rand(gen));
-	//		if (i % 10 == 0)
-	//			sample[0] = 0.5f;
-	//		input.result_ = sample;
-	//		vector<double>target(1, sample[0] * sample[0]);
-	//		iterator.run(target, &hyper_parm);
-	//		printf("[%d] input : %lf, output : %lf, answer : %lf loss : %lf\n", i, sample[0], output.result_[0], target[0], iterator.loss_);
-	//	//}
-	//	iterator.optimize(&output, &hyper_parm);
-	//}
-
-	vector<double> sample(1, 0.5);
+	vector<double> sample(128, 0.5);
 	input.result_ = sample;
 	vector<double> target(1, 0.3141592f);
-	for (int i = 0; i < 10000; i++) {
-		iterator.run(target, &hyper_parm);
-		printf("%lf\n", output.result_[0]);
+
+	random_device rd;
+	mt19937 gen(rd());
+	uniform_real_distribution<double> rand(-1, 1);
+	for (int i = 0; i < 1000; i++) {
+		for (int j = 0; j < 10; j++) {
+			vector<double>sample(1, rand(gen));
+			if (j % 10 == 0)
+				sample[0] = 0.5f;
+			input.result_ = sample;
+			vector<double>target(1, sample[0] * sample[0]);
+			iterator.run(target, &hyper_parm);
+			printf("[%d] input : %lf, output : %lf, answer : %lf loss : %lf\n", i*10+j, sample[0], output.result_[0], target[0], iterator.loss_);
+		}
 		iterator.optimize(&hyper_parm);
 	}
 
