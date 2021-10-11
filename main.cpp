@@ -11,7 +11,7 @@ int main() {
 	*/
 	FLSNN::Layer input(1, "None");
 	FLSNN::Layer transition(64, "ReLU");
-	FLSNN::Layer h1(12, "ReLU");
+	FLSNN::Layer h1(64, "ReLU");
 	FLSNN::Layer h2(64, "ReLU");
 	FLSNN::Layer h3(64, "ReLU");
 	FLSNN::Layer output(1, "None");
@@ -25,7 +25,7 @@ int main() {
 	iterator.output_ = &output;
 
 	FLSNN::HyperParm hyper_parm;
-	hyper_parm.learning_rate_ = 0.0001f;
+	hyper_parm.learning_rate_ = 0.01f;
 	hyper_parm.stochastic_rate_init_ = 0.00f;
 	hyper_parm.backprop_depth_limit_ = 10;
 	hyper_parm.grad_clipping_ = 100.0f;
@@ -59,7 +59,7 @@ int main() {
 	vector<double> sample(1, 0.5);
 	input.result_ = sample;
 	vector<double> target(1, 0.3141592f);
-	for (int i = 0; i < 100; i++) {
+	for (int i = 0; i < 10000; i++) {
 		iterator.run(target, &hyper_parm);
 		printf("%lf\n", output.result_[0]);
 		iterator.optimize(&hyper_parm);

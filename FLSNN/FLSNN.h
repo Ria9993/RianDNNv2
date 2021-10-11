@@ -209,7 +209,8 @@ namespace FLSNN {
 			double tmp = 0;
 			if (hyper_parm->loss_ == "MSE") {
 				tmp = output_->result_[i] - target[i];
-				output_->grad_[i] += 2 * fabs(tmp); ///< derivative of loss
+				//output_->grad_[i] += 2 * fabs(tmp); ///< derivative of loss
+				output_->grad_[i] += 2 * tmp;
 				loss_ += tmp * tmp;
 			}
 			else;
