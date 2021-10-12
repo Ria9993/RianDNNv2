@@ -56,8 +56,9 @@ namespace FLSNN {
 
 		//Backprop Gradient
 		vector<vector<double>> weight_grad_;
-		vector<vector<double>> weight_grad_last_;
+		vector<vector<double>> weight_grad_momentum_;
 		vector<vector<double>> stochastic_gate_grad_;
+		vector<vector<double>> stochastic_gate_grad_momentum_;
 	};
 
 	class Layer {
@@ -82,6 +83,7 @@ namespace FLSNN {
 
 		//Backprop Gradient
 		vector<double> grad_;
+		vector<double> grad_momentum_;
 
 
 		//Layer init
@@ -105,6 +107,7 @@ namespace FLSNN {
 		vector<pair<Layer*, Layer*>> route_;
 		vector<Layer*> list_; ///< 중복 없는 layer_list
 		Layer* output_; ///< pointer of output layer
+		HyperParm* hyper_parm_; ///< pointer of hyper_parm
 		int execute_num_; ///< run 횟수
 		double loss_;
 
@@ -115,12 +118,12 @@ namespace FLSNN {
 
 		//Function
 		void add(Layer* source, Layer* dest);
-		void build(HyperParm* hyper_parm);
-		void build(Layer* layer, HyperParm* hyper_parm);
-		void run(vector<double>& target, HyperParm* hyper_parm);
+		void build();
+		void build(Layer* layer);
+		void run(vector<double>& target);
 		void calc(Layer* source, Layer* dest);
-		void optimize(HyperParm* hyper_parm);
-		void backprop(Layer* layer, Layer* source, int depth, HyperParm* hyper_parm);
+		void optimize();
+		void backprop(Layer* layer, Layer* source, int depth);
 		void grad_clear();
 		///todo prediect
 	};
@@ -144,15 +147,15 @@ namespace FLSNN {
 		return;
 	}
 
-	void Iterator::build(HyperParm* hyper_parm) {
+	void Iterator::build() {
 		for (int i = 0; i < route_.size(); i++) {
-			build(route_[i].first, hyper_parm);
-			build(route_[i].second, hyper_parm);
+			build(route_[i].first);
+			build(route_[i].second);
 		}
 		return;
 	}
 
-	void Iterator::build(Layer* layer, HyperParm* hyper_parm) {
+	void Iterator::build(Layer* layer) {
 		//Check flag
 		if (layer->build_flag_ == true)
 			return;
@@ -163,27 +166,34 @@ namespace FLSNN {
 		}
 
 		//element init
-		layer->bias_.resize(layer->node_num_, hyper_parm->bias_init_);
+		layer->bias_.resize(layer->node_num_, hyper_parm_->bias_init_);
 		layer->calc_result_.resize(layer->node_num_, 0);
 		layer->result_.resize(layer->node_num_, 0);
 		layer->grad_.resize(layer->node_num_, 0);
+		layer->grad_momentum_.resize(layer->node_num_, 0);
 
 		//connection init
 		random_device rd;
 		mt19937 gen(rd());
 		normal_distribution<double> HE(0, (double)2 / layer->node_num_); ///< HE initialization
+
 		layer->connection_.resize(layer->next_.size());
 		for (int i = 0; i < layer->next_.size(); i++) {
+
 			layer->connection_[i].weight_.resize(layer->node_num_, vector<double>(layer->next_[i]->node_num_));
 			layer->connection_[i].weight_grad_.resize(layer->node_num_, vector<double>(layer->next_[i]->node_num_, 0));
-			layer->connection_[i].weight_grad_last_.resize(layer->node_num_, vector<double>(layer->next_[i]->node_num_, 0));
+			layer->connection_[i].weight_grad_momentum_.resize(layer->node_num_, vector<double>(layer->next_[i]->node_num_, 0));
+
 			layer->connection_[i].stochastic_gate_.resize(layer->node_num_, vector<double>(layer->next_[i]->node_num_));
 			layer->connection_[i].stochastic_gate_grad_.resize(layer->node_num_, vector<double>(layer->next_[i]->node_num_, 0));
+			layer->connection_[i].stochastic_gate_grad_momentum_.resize(layer->node_num_, vector<double>(layer->next_[i]->node_num_, 0));
+
 			//Weight, stochastic_gate init
 			for (int j = 0; j < layer->node_num_; j++) {
 				for (int k = 0; k < layer->next_[i]->node_num_; k++) {
+
 					layer->connection_[i].weight_[j][k] = HE(gen);
-					layer->connection_[i].stochastic_gate_[j][k] = hyper_parm->stochastic_rate_init_;
+					layer->connection_[i].stochastic_gate_[j][k] = hyper_parm_->stochastic_rate_init_;
 				}
 			}
 		}
@@ -191,7 +201,7 @@ namespace FLSNN {
 		return;
 	}
 
-	void Iterator::run(vector<double>& target,HyperParm* hyper_parm) {
+	void Iterator::run(vector<double>& target) {
 		//reset calc_result
 		for (int i = 0; i < list_.size(); i++) {
 			Layer* layer = list_[i];
@@ -207,7 +217,7 @@ namespace FLSNN {
 		loss_ = 0;
 		for (int i = 0; i < output_->node_num_; i++) {
 			double tmp = 0;
-			if (hyper_parm->loss_ == "MSE") {
+			if (hyper_parm_->loss_ == "MSE") {
 				tmp = output_->result_[i] - target[i];
 				//output_->grad_[i] += 2 * fabs(tmp); ///< derivative of loss
 				output_->grad_[i] += 2 * tmp;
@@ -248,6 +258,7 @@ namespace FLSNN {
 				//Stochastic gate
 				uniform_real_distribution<double> rnd(0, 1);
 				if (rnd(gen) > source->connection_[dest_idx].stochastic_gate_[j][n]) {
+
 					//Weight
 					dest->calc_result_[n] += source->result_[j] * source->connection_[dest_idx].weight_[j][n];
 					//Gradient
@@ -263,21 +274,21 @@ namespace FLSNN {
 		return;
 	}
 
-	void Iterator::optimize(HyperParm* hyper_parm)
+	void Iterator::optimize()
 	{		
 		//backprop
 		for (int i = 0; i < output_->last_.size(); i++) {
-			backprop(output_->last_[i], output_, 1, hyper_parm);
+			backprop(output_->last_[i], output_, 1);
 		}
 
 		grad_clear();
 		return;
 	}
 
-	void Iterator::backprop(Layer* layer, Layer* source, int depth, HyperParm* hyper_parm)
+	void Iterator::backprop(Layer* layer, Layer* source, int depth)
 	{
 		//check for backprop_depth_limit
-		if (depth >= hyper_parm->backprop_depth_limit_)
+		if (depth >= hyper_parm_->backprop_depth_limit_)
 			return;
 
 		//find source_index of layer
@@ -291,14 +302,15 @@ namespace FLSNN {
 		//calc grad & elements update
 		for (int i = 0; i < layer->node_num_; i++) {
 			for (int j = 0; j < source->node_num_; j++) {
-				double grad_tmp, tmp;
+				double grad_tmp;
 				//weight
-				grad_tmp = source->grad_[j] * layer->connection_[source_idx].weight_grad_[i][j];
-				layer->connection_[source_idx].weight_[i][j] -= hyper_parm->learning_rate_ * grad_tmp;
-				//layer->connection_[source_idx].weight_grad_last_[i][j] = tmp;
+				grad_tmp = source->grad_[j] * (layer->connection_[source_idx].weight_grad_[i][j] / execute_num_);
+				layer->connection_[source_idx].weight_grad_momentum_[i][j] += grad_tmp * hyper_parm_->momentum_rate_;
+				layer->connection_[source_idx].weight_[i][j] -= hyper_parm_->learning_rate_ * layer->connection_[source_idx].weight_grad_momentum_[i][j];
 				//stochastic_gate
-				//grad_tmp *= layer->connection_[source_idx].stochastic_gate_grad_[i][j] / execute_num_;
-				//layer->connection_[source_idx].stochastic_gate_[i][j] += hyper_parm->learning_rate_ * grad_tmp;
+				grad_tmp *= layer->connection_[source_idx].stochastic_gate_grad_[i][j] / execute_num_;
+				layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j] += grad_tmp * hyper_parm_->momentum_rate_;
+				layer->connection_[source_idx].stochastic_gate_[i][j] -= hyper_parm_->learning_rate_ * layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j];
 				//backprop
 				layer->grad_[i] += grad_tmp;
 			}
@@ -310,11 +322,12 @@ namespace FLSNN {
 		if (layer->backprop_done_ == layer->next_.size()) {
 			//bios update
 			for (int i = 0; i < layer->node_num_; i++) {
-				//layer->bias_[i] += hyper_parm->learning_rate_ * layer->grad_[i];
+				layer->grad_momentum_[i] += layer->grad_[i] * hyper_parm_->momentum_rate_;
+				layer->bias_[i] -= hyper_parm_->learning_rate_ * layer->grad_momentum_[i];
 			}
 			//backprop recursive
 			for (int i = 0; i < layer->last_.size(); i++) {
-				backprop(layer->last_[i], layer, depth + 1, hyper_parm);
+				backprop(layer->last_[i], layer, depth + 1);
 			}
 		}
 
