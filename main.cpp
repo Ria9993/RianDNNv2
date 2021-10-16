@@ -29,7 +29,6 @@ int main() {
 	hyper_parm.stochastic_rate_init_ = 0.00f;
 	hyper_parm.backprop_depth_limit_ = 10;
 	hyper_parm.grad_clipping_ = 100.0f;
-	hyper_parm.momentum_rate_ = 0.5f;
 	hyper_parm.loss_ = "MSE";
 	hyper_parm.backprop_rate_ = 0.8f;
 	hyper_parm.bias_init_ = 0.01f;
