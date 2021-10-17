@@ -92,6 +92,9 @@ namespace FLSNN {
 			activation_ = activation;
 		}
 
+		Layer() {
+		}
+
 		//Layer Connect
 		Layer operator >> (Layer& x) {
 			next_.push_back(&x);
