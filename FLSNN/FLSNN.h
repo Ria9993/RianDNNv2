@@ -120,11 +120,15 @@ namespace FLSNN {
 		void add(Layer* source, Layer* dest);
 		void build();
 		void build(Layer* layer);
+		void build(Layer* layer, bool load_flag);
 		void run(vector<double>& target);
 		void calc(Layer* source, Layer* dest);
 		void optimize();
 		void backprop(Layer* layer, Layer* source, int depth);
 		void grad_clear();
+		void model_save(); ///<< file save without gradient data
+		void model_load();
+
 		///todo prediect
 	};
 
@@ -154,8 +158,12 @@ namespace FLSNN {
 		}
 		return;
 	}
+	inline void Iterator::build(Layer* layer) {
+		build(layer, false);
+		return;
+	}
 
-	void Iterator::build(Layer* layer) {
+	void Iterator::build(Layer* layer, bool load_flag) {
 		//Check flag
 		if (layer->build_flag_ == true)
 			return;
@@ -189,11 +197,13 @@ namespace FLSNN {
 			layer->connection_[i].stochastic_gate_grad_momentum_.resize(layer->node_num_, vector<double>(layer->next_[i]->node_num_, 0));
 
 			//Weight, stochastic_gate init
-			for (int j = 0; j < layer->node_num_; j++) {
-				for (int k = 0; k < layer->next_[i]->node_num_; k++) {
+			if (load_flag == false) {
+				for (int j = 0; j < layer->node_num_; j++) {
+					for (int k = 0; k < layer->next_[i]->node_num_; k++) {
 
-					layer->connection_[i].weight_[j][k] = HE(gen);
-					layer->connection_[i].stochastic_gate_[j][k] = hyper_parm_->stochastic_rate_init_;
+						layer->connection_[i].weight_[j][k] = HE(gen);
+						layer->connection_[i].stochastic_gate_[j][k] = hyper_parm_->stochastic_rate_init_;
+					}
 				}
 			}
 		}
@@ -353,6 +363,62 @@ namespace FLSNN {
 		return;
 	}
 
+	// @Format
+	// hyper_parm
+	// layer_num(int)
+	// layers[layer_num]
+	// route[route_num](int,int)
+	// output_idx
+	void Iterator::model_save()
+	{
+		FILE* fs;
+		fs = fopen("model.data", "wb");
+		if (fs == NULL) {
+			printf("can't open file to write\n");
+			return;
+		}
+
+		//hyper_parm
+		fwrite(hyper_parm_, sizeof(HyperParm), 1, fs);
+
+		//layer_num
+		fwrite((int*)list_.size(), sizeof(int), 1, fs);
+
+		//layers
+		fwrite(&list_, sizeof(Layer), list_.size(), fs);
+
+		//route
+		///find layer_idx by pointer
+		for (int i = 0; i < route_.size(); i++) {
+			int f_idx, s_idx;
+			for (int j = 0; j < list_.size(); j++) {
+				if (list_[j] == route_[i].first)
+					f_idx = j;
+				if (list_[j] == route_[i].second)
+					s_idx = j;
+			}
+			fwrite(&f_idx, sizeof(int), 1, fs);
+			fwrite(&s_idx, sizeof(int), 1, fs);
+		}
+
+		//output_idx
+		int output_idx;
+		for (int i = 0; i < list_.size(); i++) {
+			if (output_ == list_[i])
+				output_idx = i;
+		}
+		fwrite(&output_idx, sizeof(int), 1, fs);
+
+		fclose(fs);
+
+		return;
+	}
+
+	void Iterator::model_load()
+	{
+
+		return;
+	}
+
 	//TODO
-	//model save & load
 }
