@@ -367,6 +367,7 @@ namespace FLSNN {
 	// hyper_parm
 	// layer_num(int)
 	// layers[layer_num]
+	// route_num(int)
 	// route[route_num](int,int)
 	// output_idx
 	void Iterator::model_save()
@@ -386,6 +387,9 @@ namespace FLSNN {
 
 		//layers
 		fwrite(&list_, sizeof(Layer), list_.size(), fs);
+
+		//route_num
+		fwrite((int*)route_.size(), sizeof(int), 1, fs);
 
 		//route
 		///find layer_idx by pointer
@@ -416,6 +420,42 @@ namespace FLSNN {
 
 	void Iterator::model_load()
 	{
+		FILE* fs;
+		fs = fopen("model.data", "rb");
+		if (fs == NULL) {
+			printf("can't open file to read\n");
+			return;
+		}
+
+		//hyper_parm
+		fread(hyper_parm_, sizeof(HyperParm), 1, fs);
+		
+		//layer_num
+		int layer_num;
+		fread(&layer_num, sizeof(int), 1, fs);
+		
+		//layers
+		static vector<Layer> layer(layer_num);
+		for (int i = 0; i < layer_num; i++) {
+			fread(&layer[i], sizeof(Layer), 1, fs);
+		}
+
+		//route_num
+		int route_num;
+		fread(&route_num, sizeof(int), 1, fs);
+
+		//route
+		int source, dest;
+		for (int i = 0; i < route_num; i++) {
+			fread(&source, sizeof(int), 1, fs);
+			fread(&dest, sizeof(int), 1, fs);
+			add(&layer[source], &layer[dest]);
+		}
+		
+		//output_idx
+		int output_idx;
+		fread(&output_idx, sizeof(int), 1, fs);
+		output_ = &layer[output_idx];
 
 		return;
 	}
