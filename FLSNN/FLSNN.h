@@ -129,7 +129,7 @@ namespace FLSNN {
 		void optimize();
 		void backprop(Layer* layer, Layer* source, int depth);
 		void grad_clear();
-		void model_save(); ///<< file save without gradient data
+		void model_save(); ///< file save & load
 		void model_load();
 
 		///todo prediect
@@ -167,16 +167,10 @@ namespace FLSNN {
 	}
 
 	void Iterator::build(Layer* layer, bool load_flag) {
-		//Check flag
-		if (layer->build_flag_ == true)
-			return;
-		else {
-			layer->build_flag_ = true;
-			layer->execute_num_ = 0;
-			layer->backprop_done_ = 0;
-		}
 
 		//element init
+		layer->execute_num_ = 0;
+		layer->backprop_done_ = 0;
 		layer->bias_.resize(layer->node_num_, hyper_parm_->bias_init_);
 		layer->calc_result_.resize(layer->node_num_, 0);
 		layer->result_.resize(layer->node_num_, 0);
@@ -373,6 +367,10 @@ namespace FLSNN {
 	// route_num(int)
 	// route[route_num](int,int)
 	// output_idx
+	// layer::bias*
+	// layer::connection*
+	// layer::connection::weight**
+	// layer::connection::stochastic_gate**
 	void Iterator::model_save()
 	{
 		FILE* fs;
@@ -430,6 +428,9 @@ namespace FLSNN {
 			return;
 		}
 
+		//init_
+		
+
 		//hyper_parm
 		fread(hyper_parm_, sizeof(HyperParm), 1, fs);
 		
@@ -452,6 +453,7 @@ namespace FLSNN {
 		for (int i = 0; i < route_num; i++) {
 			fread(&source, sizeof(int), 1, fs);
 			fread(&dest, sizeof(int), 1, fs);
+			route_[i] = { &layer[source], &layer[dest] };
 			add(&layer[source], &layer[dest]);
 		}
 		

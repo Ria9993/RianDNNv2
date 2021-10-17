@@ -43,18 +43,6 @@ int main() {
 	random_device rd;
 	mt19937 gen(rd());
 	uniform_real_distribution<double> rand(-1, 1);
-	for (int i = 0; i < 1000; i++) {
-		for (int j = 0; j < 10; j++) {
-			vector<double>sample(1, rand(gen));
-			if (j % 10 == 0)
-				sample[0] = 0.5f;
-			input.result_ = sample;
-			vector<double>target(1, sample[0] * sample[0]);
-			iterator.run(target);
-			printf("[%d] input : %lf, output : %lf, answer : %lf loss : %lf\n", i*10+j, sample[0], output.result_[0], target[0], iterator.loss_);
-		}
-		iterator.optimize();
-	}
 
 
 	scanf("%*d");
