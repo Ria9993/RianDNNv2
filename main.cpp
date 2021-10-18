@@ -34,7 +34,7 @@ int main() {
 	hyper_parm.bias_init_ = 0.01f;
 	iterator.hyper_parm_ = &hyper_parm;
 
-	iterator.build();
+	iterator.init();
 
 	vector<double> sample(128, 0.5);
 	input.result_ = sample;

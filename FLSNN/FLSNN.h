@@ -13,10 +13,6 @@ using namespace std;
 using namespace concurrency;
 
 namespace FLSNN {
-	inline void ReLU(double* x) {
-		*x = max((double)0, *x);
-		return;
-	}
 
 	class HyperParm {
 	private:
@@ -121,9 +117,9 @@ namespace FLSNN {
 
 		//Function
 		void add(Layer* source, Layer* dest);
-		void build();
-		void build(Layer* layer);
-		void build(Layer* layer, bool load_flag);
+		void init(); ///< resize & init elements
+		void init(bool load_flag); ///< just resize elements
+		void init(Layer* layer, bool load_flag);
 		void run(vector<double>& target);
 		void calc(Layer* source, Layer* dest);
 		void optimize();
@@ -154,19 +150,23 @@ namespace FLSNN {
 		return;
 	}
 
-	void Iterator::build() {
+	void Iterator::init() {
 		for (int i = 0; i < route_.size(); i++) {
-			build(route_[i].first);
-			build(route_[i].second);
+			init(route_[i].first, false);
+			init(route_[i].second, false);
 		}
 		return;
 	}
-	inline void Iterator::build(Layer* layer) {
-		build(layer, false);
+
+	void Iterator::init(bool load_flag) {
+		for (int i = 0; i < route_.size(); i++) {
+			init(route_[i].first, load_flag);
+			init(route_[i].second, load_flag);
+		}
 		return;
 	}
 
-	void Iterator::build(Layer* layer, bool load_flag) {
+	void Iterator::init(Layer* layer, bool load_flag) {
 
 		//element init
 		layer->execute_num_ = 0;
@@ -194,7 +194,7 @@ namespace FLSNN {
 			layer->connection_[i].stochastic_gate_grad_momentum_.resize(layer->node_num_, vector<double>(layer->next_[i]->node_num_, 0));
 
 			//Weight, stochastic_gate init
-			if (load_flag == false) {
+			if (load_flag == false) { ///< 모델 불러오기 시 초기화 배제
 				for (int j = 0; j < layer->node_num_; j++) {
 					for (int k = 0; k < layer->next_[i]->node_num_; k++) {
 
@@ -224,6 +224,7 @@ namespace FLSNN {
 		loss_ = 0;
 		for (int i = 0; i < output_->node_num_; i++) {
 			double tmp = 0;
+
 			if (hyper_parm_->loss_ == "MSE") {
 				tmp = output_->result_[i] - target[i];
 				///output_->grad_[i] += 2 * fabs(tmp);
@@ -253,6 +254,7 @@ namespace FLSNN {
 		parallel_for(0, dest->node_num_, [&](int n) {
 
 			for (int j = 0; j < source->node_num_; j++) {
+
 				//Activation
 				if (source->activation_ == "ReLU") {
 					if (source->calc_result_[j] <= 0)
@@ -309,15 +311,18 @@ namespace FLSNN {
 		//calc grad & elements update
 		for (int i = 0; i < layer->node_num_; i++) {
 			for (int j = 0; j < source->node_num_; j++) {
+
 				double grad_tmp;
 				//weight
 				grad_tmp = source->grad_[j] * (layer->connection_[source_idx].weight_grad_[i][j] / execute_num_);
 				layer->connection_[source_idx].weight_grad_momentum_[i][j] += grad_tmp;
 				layer->connection_[source_idx].weight_[i][j] -= hyper_parm_->learning_rate_ * layer->connection_[source_idx].weight_grad_momentum_[i][j];
+				
 				//stochastic_gate
 				grad_tmp *= layer->connection_[source_idx].stochastic_gate_grad_[i][j] / execute_num_;
 				layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j] += grad_tmp;
 				layer->connection_[source_idx].stochastic_gate_[i][j] -= hyper_parm_->learning_rate_ * layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j];
+				
 				//backprop
 				layer->grad_[i] += grad_tmp;
 			}
@@ -327,11 +332,13 @@ namespace FLSNN {
 
 		//wait for backprop_chain
 		if (layer->backprop_done_ == layer->next_.size()) {
-			//bios update
+			
+			//bias update
 			for (int i = 0; i < layer->node_num_; i++) {
 				layer->grad_momentum_[i] += layer->grad_[i];
 				layer->bias_[i] -= hyper_parm_->learning_rate_ * layer->grad_momentum_[i];
 			}
+			
 			//backprop recursive
 			for (int i = 0; i < layer->last_.size(); i++) {
 				backprop(layer->last_[i], layer, depth + 1);
@@ -345,10 +352,14 @@ namespace FLSNN {
 	{
 		for (int i = 0; i < list_.size(); i++) {
 			list_[i]->backprop_done_ = 0;
+
 			for (int j = 0; j < list_[i]->node_num_; j++) {
 				list_[i]->grad_[j] = 0;
+				
 				for (int k = 0; k < list_[i]->next_.size(); k++) {
+					
 					for (int l = 0; l < list_[i]->next_[k]->node_num_; l++) {
+
 						list_[i]->connection_[k].weight_grad_[j][l] = 0;
 						list_[i]->connection_[k].stochastic_gate_grad_[j][l] = 0;
 					}
@@ -367,10 +378,9 @@ namespace FLSNN {
 	// route_num(int)
 	// route[route_num](int,int)
 	// output_idx
-	// layer::bias*
-	// layer::connection*
-	// layer::connection::weight**
-	// layer::connection::stochastic_gate**
+	// layer[layer_num]::bias[node_num]
+	// layer[layer_num]::connection[layer::next_num]::weight[node_num * next::node_num]
+	// layer[layer_num]::connection[layer::next_num]::stochastic_gate[node_num * next::node_num]
 	void Iterator::model_save()
 	{
 		FILE* fs;
@@ -396,6 +406,7 @@ namespace FLSNN {
 		///find layer_idx by pointer
 		for (int i = 0; i < route_.size(); i++) {
 			int f_idx, s_idx;
+			
 			for (int j = 0; j < list_.size(); j++) {
 				if (list_[j] == route_[i].first)
 					f_idx = j;
@@ -413,6 +424,21 @@ namespace FLSNN {
 				output_idx = i;
 		}
 		fwrite(&output_idx, sizeof(int), 1, fs);
+
+		//elements of layer
+		for (int i = 0; i < list_.size(); i++) {
+
+			// layer::bias*
+			fwrite(&list_[i]->bias_, sizeof(double), list_[i]->node_num_, fs);
+			
+			// layer::connection*
+			for (int j = 0; j < list_[j]->next_.size(); j++) {
+				// layer::connection::weight**
+				fwrite(&list_[i]->connection_[j].weight_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
+				// layer::connection::stochastic_gate**
+				fwrite(&list_[i]->connection_[j].stochastic_gate_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
+			}
+		}
 
 		fclose(fs);
 
@@ -461,6 +487,24 @@ namespace FLSNN {
 		int output_idx;
 		fread(&output_idx, sizeof(int), 1, fs);
 		output_ = &layer[output_idx];
+
+		//resize layers & elements
+		init(true);
+
+		//elements of layer
+		for (int i = 0; i < list_.size(); i++) {
+
+			// layer::bias*
+			fread(&list_[i]->bias_, sizeof(double), list_[i]->node_num_, fs);
+
+			// layer::connection*
+			for (int j = 0; j < list_[j]->next_.size(); j++) {
+				// layer::connection::weight**
+				fread(&list_[i]->connection_[j].weight_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
+				// layer::connection::stochastic_gate**
+				fread(&list_[i]->connection_[j].stochastic_gate_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
+			}
+		}
 
 		return;
 	}
