@@ -34,15 +34,28 @@ int main() {
 	hyper_parm.bias_init_ = 0.01f;
 	iterator.hyper_parm_ = &hyper_parm;
 
-	iterator.init();
+	int cin;
+	printf("1.new 2.load : ");
+	scanf("%d", &cin);
+	if (cin == 1) {
+		iterator.init();
+	}
+	else if (cin == 2) {
+		iterator.model_load();
+	}
 
 	vector<double> sample(128, 0.5);
 	input.result_ = sample;
 	vector<double> target(1, 0.3141592f);
 
-	random_device rd;
-	mt19937 gen(rd());
-	uniform_real_distribution<double> rand(-1, 1);
+	iterator.run(target);
+	printf("%lf\n", output.result_[0]);
+
+	iterator.model_save();
+
+	//random_device rd;
+	//mt19937 gen(rd());
+	//uniform_real_distribution<double> rand(-1, 1);	
 
 
 	scanf("%*d");
