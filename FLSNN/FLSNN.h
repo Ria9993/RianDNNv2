@@ -92,10 +92,10 @@ namespace FLSNN {
 		}
 
 		//Layer Connect
-		Layer operator >> (Layer& x) {
+		Layer* operator >> (Layer& x) {
 			next_.push_back(&x);
 			x.last_.push_back(this);
-			return *this;
+			return this;
 		}
 	};
 
@@ -400,7 +400,7 @@ namespace FLSNN {
 		//layers
 		for (int i = 0; i < list_.size(); i++)
 		{
-			fwrite(list_[i], sizeof(Layer), 1, fs);
+			fwrite(&list_[i], sizeof(Layer), 1, fs);
 		}
 
 		//route_num
@@ -459,6 +459,10 @@ namespace FLSNN {
 			return;
 		}
 
+		//clear Iterator
+		memset(&route_, NULL, sizeof(vector<pair<Layer*, Layer*>>));
+		memset(&list_, NULL, sizeof(vector<Layer*>));
+
 		//hyper_parm
 		fread(hyper_parm_, sizeof(HyperParm), 1, fs);
 
@@ -472,10 +476,9 @@ namespace FLSNN {
 
 			fread(&layer[i], sizeof(Layer), 1, fs);
 
-			//포인터 vector는 삭제
-			layer[i].next_.resize(0);
-			//layer[i].connection_.clear();
-			layer[i].last_.resize(0);
+			//포인터 vector clear
+			memset(&layer[i].next_, NULL, sizeof(vector<Layer*>));
+			memset(&layer[i].last_, NULL, sizeof(vector<Layer*>));
 		}
 
 		//route_num
@@ -487,11 +490,11 @@ namespace FLSNN {
 		for (int i = 0; i < route_num; i++) {
 			fread(&source, sizeof(int), 1, fs);
 			fread(&dest, sizeof(int), 1, fs);
-			route_[i] = { &layer[source], &layer[dest] };
+			//route_.push_back({ &layer[source], &layer[dest] });
 			add(&layer[source], &layer[dest]);
 		}
 
-		//output_idx
+		//output_idxvector<pair<Layer*, Layer*>>
 		int output_idx;
 		fread(&output_idx, sizeof(int), 1, fs);
 		output_ = &layer[output_idx];
