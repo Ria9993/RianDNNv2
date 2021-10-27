@@ -400,7 +400,7 @@ namespace FLSNN {
 		//layers
 		for (int i = 0; i < list_.size(); i++)
 		{
-			fwrite(&list_[i], sizeof(Layer), 1, fs);
+			fwrite(list_[i], sizeof(Layer), 1, fs);
 		}
 
 		//route_num
@@ -460,8 +460,10 @@ namespace FLSNN {
 		}
 
 		//clear Iterator
-		memset(&route_, NULL, sizeof(vector<pair<Layer*, Layer*>>));
-		memset(&list_, NULL, sizeof(vector<Layer*>));
+		route_.clear();
+		list_.clear();
+		//memset(&route_, NULL, sizeof(vector<pair<Layer*, Layer*>>));
+		//memset(&list_, NULL, sizeof(vector<Layer*>));
 
 		//hyper_parm
 		fread(hyper_parm_, sizeof(HyperParm), 1, fs);
@@ -476,9 +478,15 @@ namespace FLSNN {
 
 			fread(&layer[i], sizeof(Layer), 1, fs);
 
-			//포인터 vector clear
+			//vector는 원소까지 로드가 안되므로 초기화
 			memset(&layer[i].next_, NULL, sizeof(vector<Layer*>));
 			memset(&layer[i].last_, NULL, sizeof(vector<Layer*>));
+			memset(&layer[i].connection_, NULL, sizeof(vector<Connection>));
+			memset(&layer[i].bias_ , NULL, sizeof(vector<double>));
+			memset(&layer[i].calc_result_, NULL, sizeof(vector<double>));
+			memset(&layer[i].result_, NULL, sizeof(vector<double>));
+			memset(&layer[i].grad_, NULL, sizeof(vector<double>));
+			memset(&layer[i].grad_momentum_, NULL, sizeof(vector<double>));
 		}
 
 		//route_num
