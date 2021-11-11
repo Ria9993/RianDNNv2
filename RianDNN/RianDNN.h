@@ -12,7 +12,7 @@ using namespace std;
 #include <ppl.h>
 using namespace concurrency;
 
-namespace FLSNN {
+namespace RianDNN {
 
 	class HyperParm {
 	private:

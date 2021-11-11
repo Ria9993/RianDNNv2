@@ -1,11 +1,11 @@
 #pragma warning(disable:4996)
 
-#include "FLSNN/FLSNN.h"
-using namespace FLSNN;
+#include "RianDNN/RianDNN.h"
+using namespace RianDNN;
 
 int main() {
 	
-	FLSNN::HyperParm hyper_parm;
+	RianDNN::HyperParm hyper_parm;
 	hyper_parm.learning_rate_ = 0.001f;
 	hyper_parm.stochastic_rate_init_ = 0.00f;
 	hyper_parm.backprop_depth_limit_ = 10;
@@ -14,18 +14,18 @@ int main() {
 	hyper_parm.backprop_rate_ = 0.8f;
 	hyper_parm.bias_init_ = 0.01f;
 
-	FLSNN::Iterator iterator;
+	RianDNN::Iterator iterator;
 	iterator.hyper_parm_ = &hyper_parm;
 
 	/*
 	{input, transition} += h1 += h2 += h3 += {output, transition}
 	*/
-	FLSNN::Layer input(1, "None");
-	FLSNN::Layer transition(64, "ReLU");
-	FLSNN::Layer h1(64, "ReLU");
-	FLSNN::Layer h2(64, "ReLU");
-	FLSNN::Layer h3(64, "ReLU");
-	FLSNN::Layer output(1, "None");
+	RianDNN::Layer input(1, "None");
+	RianDNN::Layer transition(64, "ReLU");
+	RianDNN::Layer h1(64, "ReLU");
+	RianDNN::Layer h2(64, "ReLU");
+	RianDNN::Layer h3(64, "ReLU");
+	RianDNN::Layer output(1, "None");
 	iterator.add(&input, &h1);
 	iterator.add(&transition, &h1);
 	iterator.add(&h1, &h2);
