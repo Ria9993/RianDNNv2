@@ -12,7 +12,7 @@ using namespace std;
 #include <ppl.h>
 using namespace concurrency;
 
-namespace RianDNN {
+namespace rian {
 
 	class HyperParm {
 	private:
@@ -371,16 +371,26 @@ namespace RianDNN {
 		return;
 	}
 
-	// @Format
-	// hyper_parm
-	// layer_num(int)
-	// layers[layer_num]
-	// route_num(int)
-	// route[route_num](int,int)
-	// output_idx
-	// layer[layer_num]::bias[node_num]
-	// layer[layer_num]::connection[layer::next_num]::weight[node_num * next::node_num]
-	// layer[layer_num]::connection[layer::next_num]::stochastic_gate[node_num * next::node_num]
+	/* @ Model save & load Format
+	hyper_parm
+	-iterator {
+		layer_num
+	}
+	-Layer * [layer_num] {
+		node_num
+		activation
+	}
+	route_num
+	route * [route_num]<pair>
+	outupt_idx
+	-Layer * [layer_num] {
+		bias * [node_num]
+		-Connection ** [list] {
+			weight **
+			stochastic_gate **
+		}
+	}
+	*/
 	void Iterator::model_save()
 	{
 		FILE* fs;
@@ -400,7 +410,8 @@ namespace RianDNN {
 		//layers
 		for (int i = 0; i < list_.size(); i++)
 		{
-			fwrite(list_[i], sizeof(Layer), 1, fs);
+			fwrite(&list_[i]->node_num_, sizeof(int), 1, fs);
+			//fwrite(&list_[i]->activation_,sizeof())
 		}
 
 		//route_num
