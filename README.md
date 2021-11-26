@@ -1,9 +1,10 @@
 # RianDNNv2
 #### Header-only DNN library for C++ <br/>
-I'm making this for use in my machine learning projects <br/>
 
 # Features
 
+### Parallel Compute
+- Parallel compute is supported by default.(C++ AMP Concurrency) <br/>
 ### Optimizer
 ```mk
 Momentum

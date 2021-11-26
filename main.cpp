@@ -12,7 +12,6 @@ int main() {
 	  momentum_rate_ = 0.66f;
 	  bias_init_ = 0.01;
 	*/
-
 	rian::Iterator iterator(&hyper_parm);
 
 	rian::Layer input(1, Activation::None);
@@ -92,7 +91,7 @@ int main() {
 			}
 			printf("\n");
 		}
-		printf("loss_mean : %lf\n", loss_mean / iterator.execute_num_);
+		printf("loss_mean : %.10lf\n", loss_mean / iterator.execute_num_);
 		
 		iterator.grad_clear();
 		//iterator.optimize();
