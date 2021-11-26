@@ -373,21 +373,19 @@ namespace rian {
 
 	/* @ Model save & load Format
 	hyper_parm
-	-iterator {
-		layer_num
-	}
+	layer_num
 	-Layer * [layer_num] {
 		node_num
 		activation
 	}
 	route_num
-	route * [route_num]<pair>
+	route * [route_num] pair<int,int>
 	outupt_idx
 	-Layer * [layer_num] {
 		bias * [node_num]
-		-Connection ** [list] {
-			weight **
-			stochastic_gate **
+		-Connection ** [next_size] {
+			weight ** [node_num * next_node_num]
+			stochastic_gate ** [node_num * next_node_num]
 		}
 	}
 	*/
@@ -411,7 +409,7 @@ namespace rian {
 		for (int i = 0; i < list_.size(); i++)
 		{
 			fwrite(&list_[i]->node_num_, sizeof(int), 1, fs);
-			//fwrite(&list_[i]->activation_,sizeof())
+			fwrite(&list_[i]->activation_, sizeof(string), 1, fs); ///< 짧아서 string자체로 저장해도 됨
 		}
 
 		//route_num
@@ -487,17 +485,18 @@ namespace rian {
 		static vector<Layer> layer(layer_num);
 		for (int i = 0; i < layer_num; i++) {
 
-			fread(&layer[i], sizeof(Layer), 1, fs);
+			fread(&layer[i].node_num_, sizeof(Layer), 1, fs);
+			fread(&layer[i].activation_, sizeof(string), 1, fs);
 
 			//vector는 원소까지 로드가 안되므로 초기화
-			memset(&layer[i].next_, NULL, sizeof(vector<Layer*>));
-			memset(&layer[i].last_, NULL, sizeof(vector<Layer*>));
-			memset(&layer[i].connection_, NULL, sizeof(vector<Connection>));
-			memset(&layer[i].bias_ , NULL, sizeof(vector<double>));
-			memset(&layer[i].calc_result_, NULL, sizeof(vector<double>));
-			memset(&layer[i].result_, NULL, sizeof(vector<double>));
-			memset(&layer[i].grad_, NULL, sizeof(vector<double>));
-			memset(&layer[i].grad_momentum_, NULL, sizeof(vector<double>));
+			//memset(&layer[i].next_, NULL, sizeof(vector<Layer*>));
+			//memset(&layer[i].last_, NULL, sizeof(vector<Layer*>));
+			//memset(&layer[i].connection_, NULL, sizeof(vector<Connection>));
+			//memset(&layer[i].bias_ , NULL, sizeof(vector<double>));
+			//memset(&layer[i].calc_result_, NULL, sizeof(vector<double>));
+			//memset(&layer[i].result_, NULL, sizeof(vector<double>));
+			//memset(&layer[i].grad_, NULL, sizeof(vector<double>));
+			//memset(&layer[i].grad_momentum_, NULL, sizeof(vector<double>));
 		}
 
 		//route_num
@@ -530,9 +529,9 @@ namespace rian {
 			// layer::connection*
 			for (int j = 0; j < list_[i]->next_.size(); j++) {
 				// layer::connection::weight**
-				fread(&list_[i]->connection_[j].weight_, sizeof(double), (long)list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
+				fread(&list_[i]->connection_[j].weight_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
 				// layer::connection::stochastic_gate**
-				fread(&list_[i]->connection_[j].stochastic_gate_, sizeof(double), (long)list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
+				fread(&list_[i]->connection_[j].stochastic_gate_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
 			}
 		}
 
