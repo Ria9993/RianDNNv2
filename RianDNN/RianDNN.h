@@ -29,14 +29,14 @@ namespace rian {
 
 		HyperParm() {
 			//Default optional parametor set
-			learning_rate_ = 0.001f;
+			learning_rate_ = 0.1e-2f;
 			grad_clipping_ = 100.0f;
 			backprop_depth_limit_ = 100;
-			momentum_rate_ = 0.8f;
+			momentum_rate_ = 0.66f;
 			loss_ = "MSE";
 			backprop_rate_ = 0.66f; ///< develop
-			stochastic_rate_init_ = -1.0f;
-			bias_init_ = 0.01f;
+			stochastic_rate_init_ = -1.0;
+			bias_init_ = 0.01;
 		}
 	};
 
@@ -63,6 +63,26 @@ namespace rian {
 		ReLU,
 		Sigmoid
 	};
+
+	inline double derivative(Activation activation, double x) {
+		switch (activation) {
+		case Activation::ReLU :
+			if (x <= 0)
+				return 0;
+			else
+				return 1;
+			break;
+		case Activation::Sigmoid :
+			break;
+		case Activation::None :
+			return 1;
+			break;
+		default :
+			break;
+		}
+
+		return -1;
+	}
 
 	class Layer {
 	private:
@@ -191,7 +211,6 @@ namespace rian {
 		//connection init
 		random_device rd;
 		mt19937 gen(rd());
-		normal_distribution<double> HE(0, (double)2 / layer->node_num_); ///< HE initialization
 
 		layer->connection_.resize(layer->next_.size());
 		for (int i = 0; i < layer->next_.size(); i++) {
@@ -206,6 +225,8 @@ namespace rian {
 
 			//Weight, stochastic_gate init
 			if (load_flag == false) { ///< 모델 불러오기 시 초기화 배제
+				
+				normal_distribution<double> HE(0, sqrtf((double)2 / layer->node_num_)); ///< HE initialization
 				for (int j = 0; j < layer->node_num_; j++) {
 					for (int k = 0; k < layer->next_[i]->node_num_; k++) {
 
@@ -292,29 +313,35 @@ namespace rian {
 		//	}
 		//	});
 
+		//Activation
+		for (int i = 0; i < source->node_num_; i++) {
+			switch (source->activation_) {
+			case Activation::ReLU :
+				source->result_[i] = fmax(0, source->result_[i]);
+				//source->grad_[i] += derivative(Activation::ReLU, source->result_[i]);
+				break;
+			//case Activation::LeakyReLU :
+			//	source->result_[i] = fmax(source->result_[i] * 0.01, source->result_[i]);
+			//	break;
+			case Activation::Sigmoid : 
+				break;
+			case Activation::None :
+				//source->grad_[i] += 1;
+				break;
+			default: 
+				break;
+			}
+		}
+
 		for (int n = 0; n < dest->node_num_; n++) {
 
 			for (int j = 0; j < source->node_num_; j++) {
 
-				//Activation
-				if (source->activation_ == Activation::ReLU) {
-					if (source->calc_result_[j] <= 0)
-						continue;
-					//ReLU(&source->calc_result_[j]);
-				}
-				if (source->activation_ == Activation::Sigmoid);
-				else;
-
-				//Stochastic gate
-				uniform_real_distribution<double> rnd(0, 1);
-				if (rnd(gen) >= source->connection_[dest_idx].stochastic_gate_[j][n]) {
-
-					//Weight
-					dest->calc_result_[n] += source->result_[j] * source->connection_[dest_idx].weight_[j][n];
-					//Gradient
-					source->connection_[dest_idx].weight_grad_[j][n] += source->result_[j];
-					source->connection_[dest_idx].stochastic_gate_grad_[j][n] += 1;
-				}
+				//Weight
+				dest->calc_result_[n] += source->result_[j] * source->connection_[dest_idx].weight_[j][n];
+				//Gradient
+				source->connection_[dest_idx].weight_grad_[j][n] += source->result_[j];
+				source->connection_[dest_idx].stochastic_gate_grad_[j][n] += 1;
 			}
 		};
 
@@ -357,14 +384,14 @@ namespace rian {
 
 				double grad_tmp;
 				//weight
-				grad_tmp = (source->grad_[j] * layer->connection_[source_idx].weight_grad_[i][j]) / execute_num_;
 				layer->connection_[source_idx].weight_grad_momentum_[i][j] *= hyper_parm_->momentum_rate_;
+				grad_tmp = (source->grad_[j] * layer->connection_[source_idx].weight_grad_[i][j]) / execute_num_;
 				layer->connection_[source_idx].weight_grad_momentum_[i][j] += grad_tmp;
 				layer->connection_[source_idx].weight_[i][j] -= hyper_parm_->learning_rate_ * layer->connection_[source_idx].weight_grad_momentum_[i][j];
 
 				//stochastic_gate
-				grad_tmp *= layer->connection_[source_idx].stochastic_gate_grad_[i][j] / execute_num_;
 				layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j] *= hyper_parm_->momentum_rate_;
+				grad_tmp *= layer->connection_[source_idx].stochastic_gate_grad_[i][j] / execute_num_;
 				layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j] += grad_tmp;
 				layer->connection_[source_idx].stochastic_gate_[i][j] -= hyper_parm_->learning_rate_ * layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j];
 
@@ -381,7 +408,7 @@ namespace rian {
 			//bias update
 			for (int i = 0; i < layer->node_num_; i++) {
 				layer->grad_momentum_[i] *= hyper_parm_->momentum_rate_;
-				layer->grad_momentum_[i] += layer->grad_[i];
+				layer->grad_momentum_[i] += layer->grad_[i] / execute_num_;
 				layer->bias_[i] -= hyper_parm_->learning_rate_ * layer->grad_momentum_[i];
 			}
 
@@ -403,7 +430,6 @@ namespace rian {
 				list_[i]->grad_[j] = 0;
 
 				for (int k = 0; k < list_[i]->next_.size(); k++) {
-
 					for (int l = 0; l < list_[i]->next_[k]->node_num_; l++) {
 
 						list_[i]->connection_[k].weight_grad_[j][l] = 0;
