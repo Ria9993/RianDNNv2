@@ -21,8 +21,9 @@ namespace rian {
 		double grad_clipping_;
 		//double momentum_rate_; ///< Optimizor momentum
 		double backprop_depth_limit_; ///< Backprop depth 제한
+		double momentum_rate_;
 		string loss_;
-		double backprop_rate_; ///< network exploding 방지
+		double backprop_rate_; ///< network exploding 방지(develop)
 		double stochastic_rate_init_; ///< stochastic_gate init value
 		double bias_init_; ///< bias init value
 
@@ -30,11 +31,11 @@ namespace rian {
 			//Default optional parametor set
 			learning_rate_ = 0.001f;
 			grad_clipping_ = 100.0f;
-			//momentum_rate_ = 0.5f;
-			backprop_depth_limit_ = 10;
+			backprop_depth_limit_ = 100;
+			momentum_rate_ = 0.8f;
 			loss_ = "MSE";
-			backprop_rate_ = 0.66f;
-			stochastic_rate_init_ = 0.3f;
+			backprop_rate_ = 0.66f; ///< develop
+			stochastic_rate_init_ = -1.0f;
 			bias_init_ = 0.01f;
 		}
 	};
@@ -117,6 +118,11 @@ namespace rian {
 		double loss_;
 
 		Iterator() {
+			execute_num_ = 0;
+			loss_ = 0;
+		}
+		Iterator(HyperParm *hyper_parm) {
+			hyper_parm_ = hyper_parm;
 			execute_num_ = 0;
 			loss_ = 0;
 		}
@@ -259,8 +265,34 @@ namespace rian {
 			}
 		}
 
-		//Parallel calc
-		parallel_for(0, dest->node_num_, [&](int n) {
+		////Parallel calc
+		//parallel_for(0, dest->node_num_, [&](int n) {
+
+		//	for (int j = 0; j < source->node_num_; j++) {
+
+		//		//Activation
+		//		if (source->activation_ == Activation::ReLU) {
+		//			if (source->calc_result_[j] <= 0)
+		//				continue;
+		//			//ReLU(&source->calc_result_[j]);
+		//		}
+		//		if (source->activation_ == Activation::Sigmoid);
+		//		else;
+
+		//		//Stochastic gate
+		//		uniform_real_distribution<double> rnd(0, 1);
+		//		if (rnd(gen) >= source->connection_[dest_idx].stochastic_gate_[j][n]) {
+
+		//			//Weight
+		//			dest->calc_result_[n] += source->result_[j] * source->connection_[dest_idx].weight_[j][n];
+		//			//Gradient
+		//			source->connection_[dest_idx].weight_grad_[j][n] += source->result_[j];
+		//			source->connection_[dest_idx].stochastic_gate_grad_[j][n] += 1;
+		//		}
+		//	}
+		//	});
+
+		for (int n = 0; n < dest->node_num_; n++) {
 
 			for (int j = 0; j < source->node_num_; j++) {
 
@@ -275,7 +307,7 @@ namespace rian {
 
 				//Stochastic gate
 				uniform_real_distribution<double> rnd(0, 1);
-				if (rnd(gen) > source->connection_[dest_idx].stochastic_gate_[j][n]) {
+				if (rnd(gen) >= source->connection_[dest_idx].stochastic_gate_[j][n]) {
 
 					//Weight
 					dest->calc_result_[n] += source->result_[j] * source->connection_[dest_idx].weight_[j][n];
@@ -284,7 +316,9 @@ namespace rian {
 					source->connection_[dest_idx].stochastic_gate_grad_[j][n] += 1;
 				}
 			}
-			});
+		};
+
+
 
 		//copy calc_result to result
 		dest->result_ = dest->calc_result_;
@@ -323,12 +357,14 @@ namespace rian {
 
 				double grad_tmp;
 				//weight
-				grad_tmp = source->grad_[j] * (layer->connection_[source_idx].weight_grad_[i][j] / execute_num_);
+				grad_tmp = (source->grad_[j] * layer->connection_[source_idx].weight_grad_[i][j]) / execute_num_;
+				layer->connection_[source_idx].weight_grad_momentum_[i][j] *= hyper_parm_->momentum_rate_;
 				layer->connection_[source_idx].weight_grad_momentum_[i][j] += grad_tmp;
 				layer->connection_[source_idx].weight_[i][j] -= hyper_parm_->learning_rate_ * layer->connection_[source_idx].weight_grad_momentum_[i][j];
 
 				//stochastic_gate
 				grad_tmp *= layer->connection_[source_idx].stochastic_gate_grad_[i][j] / execute_num_;
+				layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j] *= hyper_parm_->momentum_rate_;
 				layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j] += grad_tmp;
 				layer->connection_[source_idx].stochastic_gate_[i][j] -= hyper_parm_->learning_rate_ * layer->connection_[source_idx].stochastic_gate_grad_momentum_[i][j];
 
@@ -344,6 +380,7 @@ namespace rian {
 
 			//bias update
 			for (int i = 0; i < layer->node_num_; i++) {
+				layer->grad_momentum_[i] *= hyper_parm_->momentum_rate_;
 				layer->grad_momentum_[i] += layer->grad_[i];
 				layer->bias_[i] -= hyper_parm_->learning_rate_ * layer->grad_momentum_[i];
 			}
