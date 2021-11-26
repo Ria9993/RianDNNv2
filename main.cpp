@@ -20,18 +20,11 @@ int main() {
 	/*
 	{input, transition} += h1 += h2 += h3 += {output, transition}
 	*/
-	rian::Layer input(1, "None");
-	rian::Layer transition(64, "ReLU");
-	rian::Layer h1(64, "ReLU");
-	rian::Layer h2(64, "ReLU");
-	rian::Layer h3(64, "ReLU");
-	rian::Layer output(1, "None");
+	rian::Layer input(1, Activation::None);
+	rian::Layer h1(3, Activation::ReLU);
+	rian::Layer output(1, Activation::None);
 	iterator.add(&input, &h1);
-	iterator.add(&transition, &h1);
-	iterator.add(&h1, &h2);
-	iterator.add(&h2, &h3);
-	iterator.add(&h3, &output);
-	iterator.add(&h3, &transition);
+	iterator.add(&h1, &output);
 	iterator.output_ = &output;
 
 	int cin;
@@ -45,11 +38,10 @@ int main() {
 	}
 
 	vector<double> sample(128, 0.5);
-	input.result_ = sample;
 	vector<double> target(1, 0.3141592f);
 
-	iterator.run(target);
-	printf("%lf\n", output.result_[0]);
+	iterator.run(sample, target);
+	printf("%lf\n", iterator.output_->result_[0]);
 
 	iterator.model_save();
 
@@ -58,6 +50,7 @@ int main() {
 	//uniform_real_distribution<double> rand(-1, 1);	
 
 
+	printf("\nEnd of main\n");
 	scanf("%*d");
 	return 0;
 }

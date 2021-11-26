@@ -57,12 +57,18 @@ namespace rian {
 		vector<vector<double>> stochastic_gate_grad_momentum_;
 	};
 
+	enum class Activation {
+		None,
+		ReLU,
+		Sigmoid
+	};
+
 	class Layer {
 	private:
 	public:
 		//Parametor
 		int node_num_;
-		string activation_;
+		Activation activation_;
 
 		//Connection
 		vector<Layer*> next_;
@@ -83,7 +89,7 @@ namespace rian {
 
 
 		//Layer init
-		Layer(int node_num, string activation) {
+		Layer(int node_num, Activation activation) {
 			node_num_ = node_num;
 			activation_ = activation;
 		}
@@ -120,7 +126,7 @@ namespace rian {
 		void init(); ///< resize & init elements
 		void init(bool load_flag); ///< just resize elements
 		void init(Layer* layer, bool load_flag);
-		void run(vector<double>& target);
+		void run(vector<double>& input, vector<double>& target);
 		void calc(Layer* source, Layer* dest);
 		void optimize();
 		void backprop(Layer* layer, Layer* source, int depth);
@@ -151,9 +157,8 @@ namespace rian {
 	}
 
 	void Iterator::init() {
-		for (int i = 0; i < route_.size(); i++) {
-			init(route_[i].first, false);
-			init(route_[i].second, false);
+		for (int i = 0; i < list_.size(); i++) {
+			init(list_[i], false);
 		}
 		return;
 	}
@@ -208,7 +213,11 @@ namespace rian {
 		return;
 	}
 
-	void Iterator::run(vector<double>& target) {
+	void Iterator::run(vector<double>& input, vector<double>& target) {
+
+		//input set
+		list_[0]->result_ = input;
+
 		//reset calc_result
 		for (int i = 0; i < list_.size(); i++) {
 			Layer* layer = list_[i];
@@ -256,12 +265,12 @@ namespace rian {
 			for (int j = 0; j < source->node_num_; j++) {
 
 				//Activation
-				if (source->activation_ == "ReLU") {
+				if (source->activation_ == Activation::ReLU) {
 					if (source->calc_result_[j] <= 0)
 						continue;
 					//ReLU(&source->calc_result_[j]);
 				}
-				if (source->activation_ == "Sigmoid");
+				if (source->activation_ == Activation::Sigmoid);
 				else;
 
 				//Stochastic gate
@@ -409,7 +418,7 @@ namespace rian {
 		for (int i = 0; i < list_.size(); i++)
 		{
 			fwrite(&list_[i]->node_num_, sizeof(int), 1, fs);
-			fwrite(&list_[i]->activation_, sizeof(string), 1, fs); ///< 짧아서 string자체로 저장해도 됨
+			fwrite(&list_[i]->activation_, sizeof(Activation), 1, fs); ///< 짧아서 string자체로 저장해도 됨
 		}
 
 		//route_num
@@ -443,14 +452,20 @@ namespace rian {
 		for (int i = 0; i < list_.size(); i++) {
 
 			// layer::bias*
-			fwrite(&list_[i]->bias_, sizeof(double), list_[i]->node_num_, fs);
+			for (int j = 0; j < list_[i]->node_num_; j++) {
+				fwrite(&list_[i]->bias_[j], sizeof(double), 1, fs);
+			}
 
 			// layer::connection*
 			for (int j = 0; j < list_[i]->next_.size(); j++) {
-				// layer::connection::weight**
-				fwrite(&list_[i]->connection_[j].weight_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
-				// layer::connection::stochastic_gate**
-				fwrite(&list_[i]->connection_[j].stochastic_gate_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
+				for (int col = 0; col < list_[i]->node_num_; col++) {
+					for (int row = 0; row < list_[i]->next_[j]->node_num_; row++) {
+						// layer::connection::weight**
+						fwrite(&list_[i]->connection_[j].weight_[col][row], sizeof(double), 1, fs);
+						// layer::connection::stochastic_gate**
+						fwrite(&list_[i]->connection_[j].stochastic_gate_[col][row], sizeof(double), 1, fs);
+					}
+				}
 			}
 		}
 
@@ -484,9 +499,11 @@ namespace rian {
 		//layers
 		static vector<Layer> layer(layer_num);
 		for (int i = 0; i < layer_num; i++) {
+			//list add
+			list_.push_back(&layer[i]);
 
-			fread(&layer[i].node_num_, sizeof(Layer), 1, fs);
-			fread(&layer[i].activation_, sizeof(string), 1, fs);
+			fread(&layer[i].node_num_, sizeof(int), 1, fs);
+			fread(&layer[i].activation_, sizeof(Activation), 1, fs);
 
 			//vector는 원소까지 로드가 안되므로 초기화
 			//memset(&layer[i].next_, NULL, sizeof(vector<Layer*>));
@@ -524,14 +541,20 @@ namespace rian {
 		for (int i = 0; i < list_.size(); i++) {
 
 			// layer::bias*
-			fread(&list_[i]->bias_, sizeof(double), list_[i]->node_num_, fs);
+			for (int j = 0; j < list_[i]->node_num_; j++) {
+				fread(&list_[i]->bias_[j], sizeof(double), 1, fs);
+			}
 
 			// layer::connection*
 			for (int j = 0; j < list_[i]->next_.size(); j++) {
-				// layer::connection::weight**
-				fread(&list_[i]->connection_[j].weight_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
-				// layer::connection::stochastic_gate**
-				fread(&list_[i]->connection_[j].stochastic_gate_, sizeof(double), list_[i]->node_num_ * list_[i]->next_[j]->node_num_, fs);
+				for (int col = 0; col < list_[i]->node_num_; col++) {
+					for (int row = 0; row < list_[i]->next_[j]->node_num_; row++) {
+						// layer::connection::weight**
+						fread(&list_[i]->connection_[j].weight_[col][row], sizeof(double), 1, fs);
+						// layer::connection::stochastic_gate**
+						fread(&list_[i]->connection_[j].stochastic_gate_[col][row], sizeof(double), 1, fs);
+					}
+				}
 			}
 		}
 
