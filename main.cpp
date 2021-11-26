@@ -7,16 +7,10 @@ int main() {
 	
 	rian::HyperParm hyper_parm;
 	hyper_parm.learning_rate_ = 0.1e-4f;
-	printf("%lf\n", hyper_parm.learning_rate_);
-	/* //Default hyper_parm
-		learning_rate_ = 0.1e-2f;
-		grad_clipping_ = 100.0f;
-		backprop_depth_limit_ = 100;
-		momentum_rate_ = 0.66f;
-		loss_ = "MSE";
-		backprop_rate_ = 0.66f; ///< develop
-		stochastic_rate_init_ = -1.0;
-		bias_init_ = 0.01;
+	/*
+	  learning_rate_ = 0.1e-3f;
+	  momentum_rate_ = 0.66f;
+	  bias_init_ = 0.01;
 	*/
 
 	rian::Iterator iterator(&hyper_parm);

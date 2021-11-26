@@ -159,6 +159,7 @@ namespace rian {
 		void grad_clear();
 		void model_save(); ///< file save & load
 		void model_load();
+		vector <double> predict();
 
 		///todo prediect
 	};
@@ -441,6 +442,10 @@ namespace rian {
 
 		execute_num_ = 0;
 		return;
+	}
+
+	vector <double> Iterator::predict() {
+		return output_->result_;
 	}
 
 	/* @ Model save & load Format
