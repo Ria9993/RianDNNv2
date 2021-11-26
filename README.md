@@ -4,26 +4,26 @@ I'm making this for use in my machine learning projects <br/>
 
 # Features
 
-#### Optimizer
+### Optimizer
 ```mk
 Momentum
 ```
-#### Activation Function
+### Activation Function
 ```mk
 ReLU, 
 None
 //TODO : Sigmoid, Softmax
 ```
-#### Loss Function
+### Loss Function
 ```mk
 MSE(Mean Squared)
 //TODO : CEE(Cross Entropy)
 ```
-#### Weight Initialize
+### Weight Initialize
 ```mk
 He Normal(Default)
 ```
-#### Layer
+### Layer
 ```mk
 Dense(Default)
 //TODO :
@@ -31,14 +31,14 @@ Dense(Default)
 
 # Example
 
-#### Include
+### Include
 
 ```cpp
 #include "RianDNN/RianDNN.h"
 using namespace rian;
 ```
 
-#### Create Model
+### Create Model
 
 ```cpp
 rian::HyperParm hyper_parm;
@@ -62,7 +62,7 @@ iterator.add(&h2, &h3);
 iterator.add(&h3, &output);
 iterator.output_ = &output;
 ```
-#### Run and Optimize
+### Run and Optimize
 ```cpp
 void Iterator::run(vector<double>& input, vector<double>& target);
 void Iterator::optimize();
@@ -77,12 +77,13 @@ vector<double> target(1, 2 * sample[0]);
 iterator.run(sample, target);
 iterator.optimize();
 ```
-#### Evaluating
+### Evaluating
 ```cpp
 vector <double> Iterator::predict();
 ```
-#### Model Save & Load
+### Model Save & Load
 ```cpp
+//location : "\model.data"
 void model_save();
 void model_load();
 ```
