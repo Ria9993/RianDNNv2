@@ -23,8 +23,8 @@ namespace rian {
 	private:
 	public:
 		double learning_rate_;
+		double learning_rate_schedule_; ///< Update learning_rate_ every time to optimize
 		double grad_clipping_;
-		//double momentum_rate_; ///< Optimizor momentum
 		double backprop_depth_limit_; ///< Backprop depth มฆวั
 		double momentum_rate_;
 		Loss loss_;
@@ -34,7 +34,8 @@ namespace rian {
 
 		HyperParm() {
 			//Default optional parametor set
-			learning_rate_ = 0.1e-2f;
+			learning_rate_ = 0.1e-3f;
+			learning_rate_schedule_ = 0.97;
 			grad_clipping_ = 100.0f;
 			backprop_depth_limit_ = 100;
 			momentum_rate_ = 0.8f;
@@ -353,6 +354,9 @@ namespace rian {
 		for (int i = 0; i < output_->last_.size(); i++) {
 			backprop(output_->last_[i], output_, 1);
 		}
+
+		//update learning_rate schedule
+		hyper_parm_->learning_rate_ *= hyper_parm_->learning_rate_schedule_;
 
 		grad_clear();
 		return;

@@ -6,10 +6,11 @@ using namespace rian;
 int main() {
 	
 	rian::HyperParm hyper_parm;
-	hyper_parm.learning_rate_ = 0.1e-4f;
+	hyper_parm.learning_rate_ = 0.1e-3f;
 	/*
 	  learning_rate_ = 0.1e-3f;
-	  momentum_rate_ = 0.66f;
+	  learning_rate_schedule_ = 0.97;
+	  momentum_rate_ = 0.8f;
 	  bias_init_ = 0.01;
 	  loss_ = Loss::MSE;
 	*/
@@ -60,11 +61,6 @@ int main() {
 				sample[0], target[0], iterator.output_->result_[0], iterator.loss_);
 		}
 
-		//optimize_code
-		for (int i = 0; i < iterator.output_->last_.size(); i++) {
-			iterator.backprop(iterator.output_->last_[i], iterator.output_, 1);
-		}
-
 		//Monitoring
 		printf("[[Monitoring]]\n");
 		for (int i = 0; i < iterator.list_.size(); i++) {
@@ -92,10 +88,11 @@ int main() {
 			}
 			printf("\n");
 		}
+		printf("learning_rate : %.10lf\n", hyper_parm.learning_rate_);
 		printf("loss_mean : %.10lf\n", loss_mean / iterator.execute_num_);
 		
-		iterator.grad_clear();
-		//iterator.optimize();
+		//iterator.grad_clear();
+		iterator.optimize();
 		iterator.model_save();
 
 		//pause
