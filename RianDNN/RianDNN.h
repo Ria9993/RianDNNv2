@@ -140,7 +140,7 @@ namespace rian {
 		void init(Layer* layer, bool load_flag);
 		void run(vector<double>& input, vector<double>& target);
 		void run(vector<double>& input);
-		void calc(Layer* source, Layer* dest);
+		void calc(Layer* source, Layer* dest, bool grad_calc_flag);
 		void optimize();
 		void backprop(Layer* layer, Layer* source, int depth);
 		void grad_clear();
@@ -241,7 +241,7 @@ namespace rian {
 
 		//calc by route
 		for (int i = 0; i < route_.size(); i++) {
-			calc(route_[i].first, route_[i].second);
+			calc(route_[i].first, route_[i].second, false);
 		}
 		
 		return;
@@ -260,7 +260,7 @@ namespace rian {
 
 		//calc by route
 		for (int i = 0; i < route_.size(); i++) {
-			calc(route_[i].first, route_[i].second);
+			calc(route_[i].first, route_[i].second, true);
 		}
 
 		//calc loss and derivative
@@ -296,9 +296,9 @@ namespace rian {
 		execute_num_++;
 	}
 
-	void Iterator::calc(Layer* source, Layer* dest) {
-		random_device rd;
-		mt19937 gen(rd());
+	void Iterator::calc(Layer* source, Layer* dest, bool grad_calc_flag) {
+		//random_device rd;
+		//mt19937 gen(rd());
 
 		//find dest_index of source
 		int dest_idx;
@@ -329,17 +329,27 @@ namespace rian {
 		}
 
 		//multi-threaded Calculate
-		parallel_for(0, dest->node_num_, [&](int n) {
-			for (int j = 0; j < source->node_num_; j++) {
+		if(grad_calc_flag) {
+			parallel_for(0, dest->node_num_, [&](int n) {
+				for (int j = 0; j < source->node_num_; j++) {
 
-				//Weight
-				dest->calc_result_[n] += source->result_[j] * source->connection_[dest_idx].weight_[j][n];
-				//Gradient
-				source->connection_[dest_idx].weight_grad_[j][n] += source->result_[j];
-				source->connection_[dest_idx].stochastic_gate_grad_[j][n] += 1;
-			}
-		});
+					//Weight
+					dest->calc_result_[n] += source->result_[j] * source->connection_[dest_idx].weight_[j][n];
+					//Gradient
+					source->connection_[dest_idx].weight_grad_[j][n] += source->result_[j];
+					source->connection_[dest_idx].stochastic_gate_grad_[j][n] += 1;
+				}
+				});
+		}
+		else {
+			parallel_for(0, dest->node_num_, [&](int n) {
+				for (int j = 0; j < source->node_num_; j++) {
 
+					//Weight
+					dest->calc_result_[n] += source->result_[j] * source->connection_[dest_idx].weight_[j][n];
+				}
+				});
+		}
 
 
 		//copy calc_result to result
