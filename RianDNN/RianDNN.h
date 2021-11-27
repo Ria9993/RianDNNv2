@@ -14,6 +14,11 @@ using namespace concurrency;
 
 namespace rian {
 
+	enum class Loss {
+		MSE, ///< Mean Squared Error
+		CEE ///< Cross Entropy Error
+	};
+
 	class HyperParm {
 	private:
 	public:
@@ -22,7 +27,7 @@ namespace rian {
 		//double momentum_rate_; ///< Optimizor momentum
 		double backprop_depth_limit_; ///< Backprop depth 제한
 		double momentum_rate_;
-		string loss_;
+		Loss loss_;
 		double backprop_rate_; ///< network exploding 방지(develop)
 		double stochastic_rate_init_; ///< stochastic_gate init value
 		double bias_init_; ///< bias init value
@@ -33,7 +38,7 @@ namespace rian {
 			grad_clipping_ = 100.0f;
 			backprop_depth_limit_ = 100;
 			momentum_rate_ = 0.8f;
-			loss_ = "MSE";
+			loss_ = Loss::MSE;
 			backprop_rate_ = 0.66f; ///< develop
 			stochastic_rate_init_ = -1.0;
 			bias_init_ = 0.01;
@@ -63,26 +68,6 @@ namespace rian {
 		ReLU,
 		Sigmoid
 	};
-
-	inline double derivative(Activation activation, double x) {
-		switch (activation) {
-		case Activation::ReLU :
-			if (x <= 0)
-				return 0;
-			else
-				return 1;
-			break;
-		case Activation::Sigmoid :
-			break;
-		case Activation::None :
-			return 1;
-			break;
-		default :
-			break;
-		}
-
-		return -1;
-	}
 
 	class Layer {
 	private:
@@ -277,21 +262,35 @@ namespace rian {
 			calc(route_[i].first, route_[i].second);
 		}
 
-		//calc derivative of loss
-		double last_loss = loss_;
+		//calc loss and derivative
 		loss_ = 0;
-		for (int i = 0; i < output_->node_num_; i++) {
-			double tmp = 0;
+		switch (hyper_parm_->loss_) {
+		case Loss::MSE :
+			for (int i = 0; i < output_->node_num_; i++) {
 
-			if (hyper_parm_->loss_ == "MSE") {
-				tmp = output_->result_[i] - target[i];
-				///output_->grad_[i] += 2 * fabs(tmp);
-				output_->grad_[i] += 2 * tmp; ///< derivative of loss
-				loss_ += tmp * tmp;
+				double error = output_->result_[i] - target[i];
+				loss_ += error * error;
+
+				//derivative
+				output_->grad_[i] += (2 / output_->node_num_) * error;
 			}
-			else;
+			loss_ /= output_->node_num_;
+			break;
+		case Loss::CEE :
+			for (int i = 0; i < output_->node_num_; i++) {
+
+				double tmp = target[i] * log2f(output_->result_[i]);
+				if (!isnan(tmp))
+					loss_ -= tmp;
+
+				//derivative
+				output_->grad_[i] += output_->result_[i] - target[i];
+			}
+			loss_ /= output_->node_num_;
+			break;
+		default :
+			break;
 		}
-		loss_ /= output_->node_num_;
 
 		execute_num_++;
 	}

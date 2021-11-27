@@ -11,6 +11,7 @@ int main() {
 	  learning_rate_ = 0.1e-3f;
 	  momentum_rate_ = 0.66f;
 	  bias_init_ = 0.01;
+	  loss_ = Loss::MSE;
 	*/
 	rian::Iterator iterator(&hyper_parm);
 
