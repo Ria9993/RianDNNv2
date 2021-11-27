@@ -153,6 +153,7 @@ namespace rian {
 		void init(bool load_flag); ///< just resize elements
 		void init(Layer* layer, bool load_flag);
 		void run(vector<double>& input, vector<double>& target);
+		void run(vector<double>& input);
 		void calc(Layer* source, Layer* dest);
 		void optimize();
 		void backprop(Layer* layer, Layer* source, int depth);
@@ -238,6 +239,25 @@ namespace rian {
 			}
 		}
 
+		return;
+	}
+
+	void Iterator::run(vector<double>& input) {
+		
+		//input set
+		list_[0]->result_ = input;
+
+		//reset calc_result
+		for (int i = 0; i < list_.size(); i++) {
+			Layer* layer = list_[i];
+			layer->calc_result_ = layer->bias_;
+		}
+
+		//calc by route
+		for (int i = 0; i < route_.size(); i++) {
+			calc(route_[i].first, route_[i].second);
+		}
+		
 		return;
 	}
 
