@@ -47,7 +47,7 @@ hyper_parm.learning_rate_ = 0.1e-3f;
 /*
 	learning_rate_ = 0.1e-3f;
 	learning_rate_schedule_ = 0.97;
-	momentum_rate_ = 0.8f;
+	momentum_rate_ = 0.66f;
 	bias_init_ = 0.01;
 	loss_ = Loss::MSE;
 */
