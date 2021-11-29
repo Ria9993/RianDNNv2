@@ -65,6 +65,7 @@ model.add(Layer(1, Activation::None));
 ### Run and Optimize
 ```cpp
 void Model::run(vector<double>& input, vector<double>& target);
+void Model::run(vector<double>& input);
 void Model::optimize();
 ```
 ```cpp
@@ -77,7 +78,7 @@ vector<double> target(1, 2 * sample[0]);
 model.run(sample, target);
 model.optimize();
 ```
-### Evaluating
+### Predict Result
 ```cpp
 vector <double> Model::predict();
 ```
