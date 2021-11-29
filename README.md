@@ -52,18 +52,15 @@ hyper_parm.learning_rate_ = 0.1e-3f;
 	loss_ = Loss::MSE;
 */
 
-rian::Model iterator(&hyper_parm);
+rian::Model model(hyper_parm);
 
-rian::Layer input(1, Activation::None);
-rian::Layer h1(5, Activation::ReLU);
-rian::Layer h2(5, Activation::ReLU);
-rian::Layer h3(5, Activation::ReLU);
-rian::Layer output(1, Activation::None);
-model.add(&input, &h1);
-model.add(&h1, &h2);
-model.add(&h2, &h3);
-model.add(&h3, &output);
-model.output_ = &output;
+//input
+model.add(Layer(1, Activation::None));
+//hidden
+model.add(Layer(5, Activation::ReLU));
+model.add(Layer(5, Activation::ReLU));
+//output
+model.add(Layer(1, Activation::None));
 ```
 ### Run and Optimize
 ```cpp
