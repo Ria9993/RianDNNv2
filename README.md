@@ -87,6 +87,6 @@ vector <double> Model::predict();
 ### Model Save & Load
 ```cpp
 //location : "\model.data"
-void model_save();
-void model_load();
+void Model::model_save();
+void Model::model_load();
 ```
