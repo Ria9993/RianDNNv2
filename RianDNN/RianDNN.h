@@ -112,7 +112,7 @@ namespace rian {
 		}
 	};
 
-	class Iterator {
+	class Model {
 	private:
 	public:
 		//element
@@ -123,11 +123,11 @@ namespace rian {
 		int execute_num_; ///< run È½¼ö
 		double loss_;
 
-		Iterator() {
+		Model() {
 			execute_num_ = 0;
 			loss_ = 0;
 		}
-		Iterator(HyperParm *hyper_parm) {
+		Model(HyperParm *hyper_parm) {
 			hyper_parm_ = hyper_parm;
 			execute_num_ = 0;
 			loss_ = 0;
@@ -151,7 +151,7 @@ namespace rian {
 		///todo prediect
 	};
 
-	void Iterator::add(Layer* source, Layer* dest) {
+	void Model::add(Layer* source, Layer* dest) {
 		*source >> *dest;
 		route_.push_back({ source,dest });
 
@@ -170,14 +170,14 @@ namespace rian {
 		return;
 	}
 
-	void Iterator::init() {
+	void Model::init() {
 		for (int i = 0; i < list_.size(); i++) {
 			init(list_[i], false);
 		}
 		return;
 	}
 
-	void Iterator::init(bool load_flag) {
+	void Model::init(bool load_flag) {
 		for (int i = 0; i < route_.size(); i++) {
 			init(route_[i].first, load_flag);
 			init(route_[i].second, load_flag);
@@ -185,7 +185,7 @@ namespace rian {
 		return;
 	}
 
-	void Iterator::init(Layer* layer, bool load_flag) {
+	void Model::init(Layer* layer, bool load_flag) {
 
 		//element init
 		layer->execute_num_ = 0;
@@ -228,7 +228,7 @@ namespace rian {
 		return;
 	}
 
-	void Iterator::run(vector<double>& input) {
+	void Model::run(vector<double>& input) {
 		
 		//input set
 		list_[0]->result_ = input;
@@ -247,7 +247,7 @@ namespace rian {
 		return;
 	}
 
-	void Iterator::run(vector<double>& input, vector<double>& target) {
+	void Model::run(vector<double>& input, vector<double>& target) {
 
 		//input set
 		list_[0]->result_ = input;
@@ -296,7 +296,7 @@ namespace rian {
 		execute_num_++;
 	}
 
-	void Iterator::calc(Layer* source, Layer* dest, bool grad_calc_flag) {
+	void Model::calc(Layer* source, Layer* dest, bool grad_calc_flag) {
 		//random_device rd;
 		//mt19937 gen(rd());
 
@@ -358,7 +358,7 @@ namespace rian {
 		return;
 	}
 
-	void Iterator::optimize()
+	void Model::optimize()
 	{
 		//backprop
 		for (int i = 0; i < output_->last_.size(); i++) {
@@ -372,7 +372,7 @@ namespace rian {
 		return;
 	}
 
-	void Iterator::backprop(Layer* layer, Layer* source, int depth)
+	void Model::backprop(Layer* layer, Layer* source, int depth)
 	{
 		//check for backprop_depth_limit
 		if (depth >= hyper_parm_->backprop_depth_limit_)
@@ -429,7 +429,7 @@ namespace rian {
 		return;
 	}
 
-	void Iterator::grad_clear()
+	void Model::grad_clear()
 	{
 		for (int i = 0; i < list_.size(); i++) {
 			list_[i]->backprop_done_ = 0;
@@ -451,7 +451,7 @@ namespace rian {
 		return;
 	}
 
-	vector <double> Iterator::predict() {
+	vector <double> Model::predict() {
 		return output_->result_;
 	}
 
@@ -473,7 +473,7 @@ namespace rian {
 		}
 	}
 	*/
-	void Iterator::model_save()
+	void Model::model_save()
 	{
 		FILE* fs;
 		fs = fopen("model.data", "wb");
@@ -549,7 +549,7 @@ namespace rian {
 		return;
 	}
 
-	void Iterator::model_load()
+	void Model::model_load()
 	{
 		FILE* fs;
 		fs = fopen("model.data", "rb");

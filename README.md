@@ -43,30 +43,32 @@ using namespace rian;
 
 ```cpp
 rian::HyperParm hyper_parm;
-hyper_parm.learning_rate_ = 0.1e-4f;
+hyper_parm.learning_rate_ = 0.1e-3f;
 /*
-  learning_rate_ = 0.1e-3f;
-  momentum_rate_ = 0.66f;
-  bias_init_ = 0.01;
+	learning_rate_ = 0.1e-3f;
+	learning_rate_schedule_ = 0.97;
+	momentum_rate_ = 0.8f;
+	bias_init_ = 0.01;
+	loss_ = Loss::MSE;
 */
 
-rian::Iterator iterator(&hyper_parm);
+rian::Model iterator(&hyper_parm);
 
 rian::Layer input(1, Activation::None);
 rian::Layer h1(5, Activation::ReLU);
 rian::Layer h2(5, Activation::ReLU);
 rian::Layer h3(5, Activation::ReLU);
 rian::Layer output(1, Activation::None);
-iterator.add(&input, &h1);
-iterator.add(&h1, &h2);
-iterator.add(&h2, &h3);
-iterator.add(&h3, &output);
-iterator.output_ = &output;
+model.add(&input, &h1);
+model.add(&h1, &h2);
+model.add(&h2, &h3);
+model.add(&h3, &output);
+model.output_ = &output;
 ```
 ### Run and Optimize
 ```cpp
-void Iterator::run(vector<double>& input, vector<double>& target);
-void Iterator::optimize();
+void Model::run(vector<double>& input, vector<double>& target);
+void Model::optimize();
 ```
 ```cpp
 /*example y = 2x */
@@ -75,12 +77,12 @@ vector<double> sample(1, rand_real());
 vector<double> target(1, 2 * sample[0]);
 
 //run & optimize
-iterator.run(sample, target);
-iterator.optimize();
+model.run(sample, target);
+model.optimize();
 ```
 ### Evaluating
 ```cpp
-vector <double> Iterator::predict();
+vector <double> Model::predict();
 ```
 ### Model Save & Load
 ```cpp
