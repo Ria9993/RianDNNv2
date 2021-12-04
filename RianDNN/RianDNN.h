@@ -120,6 +120,7 @@ namespace rian {
 		void model_save(); ///< file save & load
 		void model_load();
 		vector <double> predict();
+		void grad_copy(Model& source);
 
 	};
 
@@ -370,6 +371,28 @@ namespace rian {
 		}
 
 		execute_num_ = 0;
+
+		return;
+	}
+
+	void Model::grad_copy(Model& source) {
+
+		for (int i = 0; i < layer_.size(); i++) {
+
+			for (int j = 0; j < layer_[i].node_num_; j++) {
+
+				layer_[i].grad_[j] = source.layer_[i].grad_[j];
+
+				//output layer outofrange
+				if (i == layer_.size() - 1) {
+					break;
+				}
+				for (int l = 0; l < layer_[i + 1].node_num_; l++) {
+
+					layer_[i].connection_.weight_grad_[j][l] = source.layer_[i].connection_.weight_grad_[j][l];
+				}
+			}
+		}
 
 		return;
 	}
