@@ -61,6 +61,8 @@ model.add(Layer(5, Activation::ReLU));
 model.add(Layer(5, Activation::ReLU));
 //output
 model.add(Layer(1, Activation::None));
+
+model.init();
 ```
 ### Run and Optimize
 ```cpp
