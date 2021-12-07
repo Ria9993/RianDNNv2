@@ -117,8 +117,8 @@ namespace rian {
 		void optimize();
 		void backprop();
 		void grad_clear();
-		void model_save(); ///< file save & load
-		void model_load();
+		void model_save(string filename); ///< file save & load
+		void model_load(string filename);
 		vector <double> predict();
 		void grad_copy(Model& source);
 
@@ -401,10 +401,10 @@ namespace rian {
 		return layer_.rbegin()->result_;
 	}
 
-	void Model::model_save()
+	void Model::model_save(string filename)
 	{
 		FILE* fs;
-		fs = fopen("model.data", "wb");
+		fs = fopen(filename.c_str(), "wb");
 		if (fs == NULL) {
 			printf("can't open file to write\n");
 			return;
@@ -452,10 +452,10 @@ namespace rian {
 		return;
 	}
 
-	void Model::model_load()
+	void Model::model_load(string filename)
 	{
 		FILE* fs;
-		fs = fopen("model.data", "rb");
+		fs = fopen(filename.c_str(), "rb");
 		if (fs == NULL) {
 			printf("can't open file to read\n");
 			return;

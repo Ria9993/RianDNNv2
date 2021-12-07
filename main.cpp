@@ -32,7 +32,7 @@ int main() {
 			model.init();
 			break;
 	case 2 :
-			model.model_load();
+			model.model_load("model.data");
 			break;
 	}
 
@@ -81,7 +81,7 @@ int main() {
 		
 		//model.grad_clear();
 		model.optimize();
-		model.model_save();
+		model.model_save("model.data");
 
 		//pause
 		if (epoch == 0) getchar();
