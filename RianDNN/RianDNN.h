@@ -111,8 +111,8 @@ namespace rian {
 		//Function
 		void add(Layer layer);
 		void init(bool load_flag = false);
-		void run(vector<double>& input, vector<double>& target);
-		void run(vector<double>& input);
+		void run(vector<double>& input, vector<double>& target, bool grad_calc_flag = true);
+		void run(vector<double>& input, bool grad_calc_flag = true);
 		void calc(bool grad_calc_flag);
 		void optimize();
 		void backprop();
@@ -175,7 +175,7 @@ namespace rian {
 		return;
 	}
 
-	void Model::run(vector<double>& input) {
+	void Model::run(vector<double>& input, bool grad_calc_flag) {
 
 		//input set
 		layer_[0].result_ = input;
@@ -185,12 +185,12 @@ namespace rian {
 			layer_[i].calc_result_ = layer_[i].bias_;
 		}
 
-		calc(false);
+		calc(grad_calc_flag);
 
 		return;
 	}
 
-	void Model::run(vector<double>& input, vector<double>& target) {
+	void Model::run(vector<double>& input, vector<double>& target, bool grad_calc_flag) {
 
 		//input set
 		layer_[0].result_ = input;
@@ -201,7 +201,7 @@ namespace rian {
 		}
 
 		//calc all layers
-		calc(true);
+		calc(grad_calc_flag);
 
 		//calc loss and derivative
 		loss_ = 0;
@@ -498,7 +498,7 @@ namespace rian {
 			// layer::connection
 			for (int col = 0; col < layer_[i].node_num_; col++) {
 				for (int row = 0; row < layer_[i + 1].node_num_; row++) {
-					
+
 					// layer::connection::weight**
 					fread(&layer_[i].connection_.weight_[col][row], sizeof(double), 1, fs);
 				}
