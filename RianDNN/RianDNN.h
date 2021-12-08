@@ -119,7 +119,7 @@ namespace rian {
 		void grad_clear();
 		void model_save(string filename); ///< file save & load
 		void model_load(string filename);
-		vector <double> predict();
+		vector <double>& predict();
 		void grad_copy(Model& source);
 
 	};
@@ -397,7 +397,7 @@ namespace rian {
 		return;
 	}
 
-	vector <double> Model::predict() {
+	vector <double>& Model::predict() {
 		return layer_.rbegin()->result_;
 	}
 
