@@ -46,10 +46,10 @@ int main() {
 			//random
 			random_device rd;
 			mt19937 gen(rd());
-			uniform_real_distribution<double> rnd(0, 1);
+			uniform_real_distribution<long double> rnd(0, 1);
 
-			vector<double> sample(1, rnd(gen));
-			vector<double> target(1, 2 * sample[0]);
+			vector<long double> sample(1, rnd(gen));
+			vector<long double> target(1, 2 * sample[0]);
 
 			//run
 			model.run(sample, target);

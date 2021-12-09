@@ -16,17 +16,18 @@ namespace rian {
 
 	enum class Loss {
 		MSE, ///< Mean Squared Error
-		CEE ///< Cross Entropy Error
+		CEE, ///< Cross Entropy Error
+		MSE_sum
 	};
 
 	class HyperParm {
 	private:
 	public:
-		double learning_rate_;
-		double learning_rate_schedule_; ///< Update learning_rate_ every time to optimize
-		double momentum_rate_;
+		long double learning_rate_;
+		long double learning_rate_schedule_; ///< Update learning_rate_ every time to optimize
+		long double momentum_rate_;
 		Loss loss_;
-		double bias_init_; ///< bias init value
+		long double bias_init_; ///< bias init value
 
 		HyperParm() {
 			//Default optional parametor set
@@ -43,11 +44,11 @@ namespace rian {
 	public:
 
 		//Element
-		vector<vector<double>> weight_;
+		vector<vector<long double>> weight_;
 
 		//Backprop Gradient
-		vector<vector<double>> weight_grad_;
-		vector<vector<double>> weight_grad_momentum_;
+		vector<vector<long double>> weight_grad_;
+		vector<vector<long double>> weight_grad_momentum_;
 	};
 
 	enum class Activation {
@@ -68,13 +69,13 @@ namespace rian {
 
 		//Element
 		int execute_num_;
-		vector<double> bias_;
-		vector<double> calc_result_;
-		vector<double> result_;
+		vector<long double> bias_;
+		vector<long double> calc_result_;
+		vector<long double> result_;
 
 		//Backprop Gradient
-		vector<double> grad_;
-		vector<double> grad_momentum_;
+		vector<long double> grad_;
+		vector<long double> grad_momentum_;
 
 
 		//Layer init
@@ -96,7 +97,7 @@ namespace rian {
 		vector<Layer> layer_; ///< 중복 없는 layer_list
 		HyperParm hyper_parm_; ///< pointer of hyper_parm
 		int execute_num_; ///< run 횟수
-		double loss_;
+		long double loss_;
 
 		Model() {
 			execute_num_ = 0;
@@ -111,15 +112,15 @@ namespace rian {
 		//Function
 		void add(Layer layer);
 		void init(bool load_flag = false);
-		void run(vector<double>& input, vector<double>& target, bool grad_calc_flag = true);
-		void run(vector<double>& input, bool grad_calc_flag = true);
+		void run(vector<long double>& input, vector<long double>& target, bool grad_calc_flag = true);
+		void run(vector<long double>& input, bool grad_calc_flag = true);
 		void calc(bool grad_calc_flag);
 		void optimize();
 		void backprop();
 		void grad_clear();
 		void model_save(string filename); ///< file save & load
 		void model_load(string filename);
-		vector <double>& predict();
+		vector <long double>& predict();
 		void grad_copy(Model& source);
 
 	};
@@ -155,14 +156,14 @@ namespace rian {
 			}
 
 
-			layer->connection_.weight_.resize(layer->node_num_, vector<double>(layer_[layer_i + 1].node_num_));
-			layer->connection_.weight_grad_.resize(layer->node_num_, vector<double>(layer_[layer_i + 1].node_num_, 0));
-			layer->connection_.weight_grad_momentum_.resize(layer->node_num_, vector<double>(layer_[layer_i + 1].node_num_, 0));
+			layer->connection_.weight_.resize(layer->node_num_, vector<long double>(layer_[layer_i + 1].node_num_));
+			layer->connection_.weight_grad_.resize(layer->node_num_, vector<long double>(layer_[layer_i + 1].node_num_, 0));
+			layer->connection_.weight_grad_momentum_.resize(layer->node_num_, vector<long double>(layer_[layer_i + 1].node_num_, 0));
 
 			//Weight, stochastic_gate init
 			if (load_flag == false) { ///< 모델 불러오기 시 초기화 배제
 
-				normal_distribution<double> HE(0, sqrtf((double)2 / layer->node_num_)); ///< HE initialization
+				normal_distribution<long double> HE(0, sqrtf((long double)2 / layer->node_num_)); ///< HE initialization
 				for (int j = 0; j < layer->node_num_; j++) {
 					for (int k = 0; k < layer_[layer_i + 1].node_num_; k++) {
 
@@ -175,7 +176,7 @@ namespace rian {
 		return;
 	}
 
-	void Model::run(vector<double>& input, bool grad_calc_flag) {
+	void Model::run(vector<long double>& input, bool grad_calc_flag) {
 
 		//input set
 		layer_[0].result_ = input;
@@ -190,7 +191,7 @@ namespace rian {
 		return;
 	}
 
-	void Model::run(vector<double>& input, vector<double>& target, bool grad_calc_flag) {
+	void Model::run(vector<long double>& input, vector<long double>& target, bool grad_calc_flag) {
 
 		//input set
 		layer_[0].result_ = input;
@@ -209,7 +210,7 @@ namespace rian {
 		case Loss::MSE:
 			for (int i = 0; i < layer_.rbegin()->node_num_; i++) {
 
-				double error = layer_.rbegin()->result_[i] - target[i];
+				long double error = layer_.rbegin()->result_[i] - target[i];
 				loss_ += error * error;
 
 				//derivative
@@ -220,7 +221,7 @@ namespace rian {
 		case Loss::CEE:
 			for (int i = 0; i < layer_.rbegin()->node_num_; i++) {
 
-				double tmp = target[i] * log2f(layer_.rbegin()->result_[i]);
+				long double tmp = target[i] * log2f(layer_.rbegin()->result_[i]);
 				if (!isnan(tmp))
 					loss_ -= tmp;
 
@@ -228,6 +229,16 @@ namespace rian {
 				layer_.rbegin()->grad_[i] += layer_.rbegin()->result_[i] - target[i];
 			}
 			loss_ /= layer_.rbegin()->node_num_;
+			break;
+		case Loss::MSE_sum:
+			for (int i = 0; i < layer_.rbegin()->node_num_; i++) {
+
+				long double error = layer_.rbegin()->result_[i] - target[i];
+				loss_ += 2 * error;
+
+				//derivative
+				layer_.rbegin()->grad_[i] += 2 * error;
+			}
 			break;
 		default:
 			break;
@@ -255,6 +266,7 @@ namespace rian {
 					//	source->result_[i] = fmax(source->result_[i] * 0.01, source->result_[i]);
 					//	break;
 				case Activation::Sigmoid:
+					source->result_[i] = 1 / (1 + exp(-source->result_[i]));
 					break;
 				case Activation::None:
 					//source->grad_[i] += 1;
@@ -327,7 +339,7 @@ namespace rian {
 			for (int i = 0; i < layer->node_num_; i++) {
 				for (int j = 0; j < source->node_num_; j++) {
 
-					double grad_tmp;
+					long double grad_tmp;
 					//weight
 					layer->connection_.weight_grad_momentum_[i][j] *= hyper_parm_.momentum_rate_;
 					grad_tmp = (source->grad_[j] * layer->connection_.weight_grad_[i][j]) / execute_num_;
@@ -397,7 +409,7 @@ namespace rian {
 		return;
 	}
 
-	vector <double>& Model::predict() {
+	vector <long double>& Model::predict() {
 		return layer_.rbegin()->result_;
 	}
 
@@ -429,7 +441,7 @@ namespace rian {
 
 			// layer::bias*
 			for (int j = 0; j < layer_[i].node_num_; j++) {
-				fwrite(&layer_[i].bias_[j], sizeof(double), 1, fs);
+				fwrite(&layer_[i].bias_[j], sizeof(long double), 1, fs);
 			}
 
 			//output_layer out_of_range
@@ -442,7 +454,7 @@ namespace rian {
 				for (int row = 0; row < layer_[i + 1].node_num_; row++) {
 
 					// layer::connection::weight**
-					fwrite(&layer_[i].connection_.weight_[col][row], sizeof(double), 1, fs);
+					fwrite(&layer_[i].connection_.weight_[col][row], sizeof(long double), 1, fs);
 				}
 			}
 		}
@@ -487,7 +499,7 @@ namespace rian {
 
 			// layer::bias*
 			for (int j = 0; j < layer_[i].node_num_; j++) {
-				fread(&layer_[i].bias_[j], sizeof(double), 1, fs);
+				fread(&layer_[i].bias_[j], sizeof(long double), 1, fs);
 			}
 
 			//output_layer out_of_range
@@ -500,7 +512,7 @@ namespace rian {
 				for (int row = 0; row < layer_[i + 1].node_num_; row++) {
 
 					// layer::connection::weight**
-					fread(&layer_[i].connection_.weight_[col][row], sizeof(double), 1, fs);
+					fread(&layer_[i].connection_.weight_[col][row], sizeof(long double), 1, fs);
 				}
 			}
 		}
