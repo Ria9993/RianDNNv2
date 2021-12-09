@@ -406,6 +406,9 @@ namespace rian {
 			}
 		}
 
+		execute_num_ = source.execute_num_;
+		loss_ = source.loss_;
+
 		return;
 	}
 
