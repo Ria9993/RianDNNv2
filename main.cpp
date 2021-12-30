@@ -6,7 +6,7 @@ using namespace rian;
 int main() {
 	
 	rian::HyperParm hyper_parm;
-	hyper_parm.learning_rate_ = 0.1e-3f;
+	hyper_parm.learning_rate_ = 0.1e-4f;
 	/*
 	  learning_rate_ = 0.1e-3f;
 	  learning_rate_schedule_ = 0.97;

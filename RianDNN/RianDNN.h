@@ -75,6 +75,7 @@ namespace rian {
 
 		//Backprop Gradient
 		vector<long double> grad_;
+		vector<long double> grad_tmp_;
 		vector<long double> grad_momentum_;
 
 
@@ -144,6 +145,7 @@ namespace rian {
 			layer->calc_result_.resize(layer->node_num_, 0);
 			layer->result_.resize(layer->node_num_, 0);
 			layer->grad_.resize(layer->node_num_, 0);
+			layer->grad_tmp_.resize(layer->node_num_, 0);
 			layer->grad_momentum_.resize(layer->node_num_, 0);
 
 			//connection init
@@ -259,14 +261,12 @@ namespace rian {
 			for (int i = 0; i < source->node_num_; i++) {
 				switch (source->activation_) {
 				case Activation::ReLU:
+					source->grad_tmp_[i] = source->result_[i] > 0 ? 1 : 0; ///< derivative
 					source->result_[i] = fmax(0, source->result_[i]);
-					//source->grad_[i] += derivative(Activation::ReLU, source->result_[i]);
 					break;
-					//case Activation::LeakyReLU :
-					//	source->result_[i] = fmax(source->result_[i] * 0.01, source->result_[i]);
-					//	break;
 				case Activation::Sigmoid:
 					source->result_[i] = 1 / (1 + exp(-source->result_[i]));
+					source->grad_tmp_[i] = source->result_[i] * (1 - source->result_[i]); ///< derivative
 					break;
 				case Activation::None:
 					//source->grad_[i] += 1;
@@ -353,6 +353,7 @@ namespace rian {
 
 			//bias update
 			for (int i = 0; i < layer->node_num_; i++) {
+				layer->grad_[i] *= layer->grad_tmp_[i] / execute_num_;
 				layer->grad_momentum_[i] *= hyper_parm_.momentum_rate_;
 				layer->grad_momentum_[i] += layer->grad_[i] / execute_num_;
 				layer->bias_[i] -= hyper_parm_.learning_rate_ * layer->grad_momentum_[i];
