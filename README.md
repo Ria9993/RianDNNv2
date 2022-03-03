@@ -1,5 +1,6 @@
 # RianDNNv2
 #### Header-only DNN library for C++ <br/>
+버그많음.. back propagation에 뭔가 문제 있음.. (미분이 잘못된 건지 가끔 weight폭파..)
 
 # Features
 
